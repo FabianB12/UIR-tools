@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UIR Exam Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .nav-bar {
+            background-color: #1f2937;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .answer-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        .answer-btn:hover:not(.answered) {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .answer-btn.selected {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+        .answer-btn.correct {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+        .answer-btn.wrong {
+            border-color: #ef4444;
+            background: #fee2e2;
+        }
+        .answer-btn.answered {
+            cursor: default;
+        }
+        .progress-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .explanation-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            border-radius: 0 6px 6px 0;
+            margin-top: 16px;
+        }
+        .results-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        /* Browse View Styles */
+        .browse-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+        .search-wrapper {
+            position: sticky;
+            top: 0;
+            background: #f3f4f6;
+            padding: 1rem 0;
+            z-index: 100;
+        }
+        .search-box {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
+        }
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-top: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 101;
+        }
+        .search-dropdown.active {
+            display: block;
+        }
+        .search-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.15s;
+        }
+        .search-item:last-child {
+            border-bottom: none;
+        }
+        .search-item:hover, .search-item.highlighted {
+            background: #eff6ff;
+        }
+        .search-item-id {
+            font-weight: 700;
+            color: #3b82f6;
+            margin-right: 8px;
+        }
+        .search-item-text {
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        .search-item-category {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .browse-question {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            scroll-margin-top: 100px;
+        }
+        .browse-question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .browse-question-id {
+            font-weight: 700;
+            color: #3b82f6;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .browse-question-text {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            flex: 1;
+            min-width: 200px;
+        }
+        .browse-answer {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            padding: 0.75rem 1rem;
+            border-radius: 0 8px 8px 0;
+            color: #065f46;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .browse-explanation {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #f0f9ff;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #1e40af;
+        }
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .nav-tab:not(.active) {
+            background: #374151;
+            color: #9ca3af;
+        }
+        .nav-tab:not(.active):hover {
+            background: #4b5563;
+            color: white;
+        }
+        @media (max-width: 640px) {
+            .browse-question {
+                padding: 1rem;
+            }
+            .browse-question-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .search-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            .nav-bar {
+                padding: 0 12px;
+            }
+            .nav-tabs {
+                gap: 0.5rem;
+            }
+            .nav-tab {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <div class="text-white font-bold text-lg hidden sm:block">UIR Exam Quiz</div>
+        <div class="nav-tabs flex gap-2 sm:ml-6">
+            <button onclick="switchView('quiz')" id="tab-quiz" class="nav-tab active">Quiz</button>
+            <button onclick="switchView('browse')" id="tab-browse" class="nav-tab">Browse All</button>
+        </div>
+        <div class="ml-auto flex items-center gap-4">
+            <span id="score-display" class="text-gray-300 text-sm">Score: 0/128</span>
+            <button onclick="restartQuiz()" id="restart-btn" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded">Restart</button>
+        </div>
+    </nav>
+
+    <main class="p-4 sm:p-6">
+        <!-- Quiz View -->
+        <div id="quiz-view">
+            <div class="max-w-3xl mx-auto mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="progress-text" class="text-sm text-gray-600">Question 1 of 128</span>
+                    <div class="flex items-center gap-4">
+                        <span id="timer-display" class="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">0:00</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">Jump to:</label>
+                        <input type="number" id="jump-input" min="1" max="128" value="1"
+                               class="w-16 px-2 py-1 border rounded text-sm" onchange="jumpToQuestion(this.value)">
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="question-container" class="question-card p-6">
+                <!-- Question content loaded by JS -->
+            </div>
+
+            <div id="results-container" class="hidden">
+                <div class="results-card p-8 text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+                    <div id="final-score" class="text-5xl font-bold text-blue-600 my-6">0%</div>
+                    <p id="score-detail" class="text-gray-600 mb-6">0 correct out of 128</p>
+                    <div id="category-breakdown" class="text-left mb-6"></div>
+                    <div class="flex gap-3 justify-center">
+                        <button onclick="restartQuiz()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">Try Again</button>
+                        <button onclick="reviewWrong()" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold">Review Wrong Answers</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-3xl mx-auto mt-4 flex justify-between">
+                <button id="prev-btn" onclick="prevQuestion()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded font-semibold disabled:opacity-50" disabled>Previous</button>
+                <button id="next-btn" onclick="nextQuestion()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold hidden">Next Question</button>
+            </div>
+        </div>
+
+        <!-- Browse View -->
+        <div id="browse-view" class="hidden">
+            <div class="browse-container">
+                <div class="search-wrapper">
+                    <div class="search-box">
+                        <svg class="search-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="search-input" class="search-input" placeholder="Search questions..." autocomplete="off">
+                        <div id="search-dropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+                <div id="browse-questions-list">
+                    <!-- Questions loaded by JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    const questions = [
+        // Q1-12: Robot Basics
+        {
+            id: 1, category: "Robot Basics", isSketch: false,
+            question: "Characterize the main difference between stationary robots (robotic arms/manipulators) and mobile robots?",
+            answers: [
+                { text: "Stationary robots have a fixed base and manipulate objects within a workspace, while mobile robots can locomote through their environment", correct: true },
+                { text: "Stationary robots primarily use electric motors and require constant power, while mobile robots operate on battery power and use hydraulic systems", correct: false },
+                { text: "Stationary robots can only perform repetitive tasks in factories, while mobile robots are designed exclusively for outdoor navigation and surveillance", correct: false }
+            ],
+            explanation: "Stationary robots (manipulators) are anchored to a fixed location and work within a defined workspace. Mobile robots can move through their environment using various locomotion methods."
+        },
+        {
+            id: 2, category: "Robot Basics", isSketch: false,
+            question: "What type of mobile robots are you aware of?",
+            answers: [
+                { text: "Ground robots (wheeled, tracked, legged), aerial robots (UAVs, drones), underwater robots (AUVs, ROVs), and surface water robots", correct: true },
+                { text: "Bipedal humanoids for research, quadcopters for delivery, and snake robots designed specifically for medical surgery applications", correct: false },
+                { text: "Autonomous vehicles limited to highways, warehouse sorting robots, and specialized robots that only work in zero-gravity environments", correct: false }
+            ],
+            explanation: "Mobile robots include ground-based (wheeled, tracked, legged), aerial (UAVs), underwater (AUVs, ROVs), and surface vehicles operating in different environments."
+        },
+        {
+            id: 3, category: "Robot Basics", isSketch: false,
+            question: "Can you name at least three types of ground robots?",
+            answers: [
+                { text: "Wheeled robots, tracked robots, and legged robots (bipeds, quadrupeds, hexapods)", correct: true },
+                { text: "Spherical rolling robots, magnetic wall-climbing robots, and pneumatic jumping mechanisms with spring actuators", correct: false },
+                { text: "Crawler robots using peristaltic motion, hovercraft-based platforms, and gyroscope-stabilized monowheels", correct: false }
+            ],
+            explanation: "Ground robots include wheeled (differential drive, Ackermann), tracked (like tanks), and legged robots (humanoids, quadrupeds like Spot, hexapods)."
+        },
+        {
+            id: 4, category: "Robot Basics", isSketch: false,
+            question: "List three main parts of a robot?",
+            answers: [
+                { text: "Sensors, actuators, and controllers", correct: true },
+                { text: "Power supply systems, communication modules, and mechanical chassis components for structural support", correct: false },
+                { text: "Processing units, memory storage systems, and input/output interfaces for user interaction", correct: false }
+            ],
+            explanation: "The three fundamental components are: sensors (perceive environment), actuators (produce motion/action), and controllers (process information and make decisions)."
+        },
+        {
+            id: 5, category: "Robot Basics", isSketch: false,
+            question: "What is embodiment in the context of robots and their interactions with the world?",
+            answers: [
+                { text: "The physical body of the robot that determines how it can sense and act in the environment, shaping its capabilities and limitations", correct: true },
+                { text: "The software architecture that defines how algorithms are structured and executed within the robot's computational framework", correct: false },
+                { text: "The network topology used for multi-robot coordination and distributed processing across swarm robotics systems", correct: false }
+            ],
+            explanation: "Embodiment refers to how a robot's physical form (morphology) influences its interaction with the environment. The body shape affects sensing, actuation, and what tasks the robot can perform."
+        },
+        {
+            id: 6, category: "Robot Basics", isSketch: false,
+            question: "Characterized main differences between exteroceptive and proprioceptive sensors.",
+            answers: [
+                { text: "Exteroceptive sensors measure external environment (cameras, lidar), while proprioceptive sensors measure internal state (encoders, IMU, joint angles)", correct: true },
+                { text: "Exteroceptive sensors operate at high frequencies above 1kHz, while proprioceptive sensors are limited to low-frequency measurements below 10Hz", correct: false },
+                { text: "Exteroceptive sensors require calibration once during manufacturing, while proprioceptive sensors need continuous real-time calibration", correct: false }
+            ],
+            explanation: "Exteroceptive sensors perceive the external world (distance, images, sound). Proprioceptive sensors measure the robot's internal state (position, velocity, joint angles, battery level)."
+        },
+        {
+            id: 7, category: "Robot Basics", isSketch: false,
+            question: "List three exteroceptive (proximity) sensors",
+            answers: [
+                { text: "Ultrasonic/sonar sensors, infrared sensors, and laser rangefinders (lidar)", correct: true },
+                { text: "Rotary encoders for measuring wheel displacement, gyroscopic sensors for orientation, and accelerometer arrays for motion detection", correct: false },
+                { text: "Thermal imaging cameras for heat detection, barometric pressure sensors for altitude, and magnetic field sensors for compass heading", correct: false }
+            ],
+            explanation: "Exteroceptive proximity sensors include ultrasonic (sonar), infrared (IR), lidar, radar, and cameras with depth sensing capabilities."
+        },
+        {
+            id: 8, category: "Robot Basics", isSketch: false,
+            question: "What is Central Pattern Generator (CPGs) and how it can be utilized for controlling a robot motion?",
+            answers: [
+                { text: "Neural networks that produce rhythmic patterns without sensory feedback, used for generating periodic motions like walking gaits in legged robots", correct: true },
+                { text: "A hierarchical control architecture that distributes commands from a master controller to individual joint actuators in sequential order", correct: false },
+                { text: "A feedback mechanism that uses GPS signals to continuously correct the robot's path during autonomous navigation tasks", correct: false }
+            ],
+            explanation: "CPGs are neural circuits that generate rhythmic motor patterns. In robotics, they're used to create walking, swimming, or flying patterns without requiring constant sensory feedback."
+        },
+        {
+            id: 9, category: "Robot Basics", isSketch: false,
+            question: "Describe briefly notion of degrees of freedom (DOF) and Controllable DOF (CDOF)",
+            answers: [
+                { text: "DOF is the number of independent parameters defining robot configuration; CDOF is the number of DOF that can be independently controlled by actuators", correct: true },
+                { text: "DOF measures the workspace volume the robot can reach; CDOF measures the precision accuracy at each point in that workspace", correct: false },
+                { text: "DOF represents the total number of joints in the kinematic chain; CDOF represents joints that have position feedback encoders", correct: false }
+            ],
+            explanation: "DOF defines the minimum coordinates needed to specify configuration. CDOF are the degrees that can be directly controlled. A car has 3 DOF (x, y, θ) but only 2 CDOF (speed, steering)."
+        },
+        {
+            id: 10, category: "Robot Basics", isSketch: false,
+            question: "Characterize differences between holonomic and nonholonomic robots?",
+            answers: [
+                { text: "Holonomic robots can move instantaneously in any direction (DOF = CDOF), while nonholonomic robots have motion constraints (DOF > CDOF), like cars that cannot move sideways", correct: true },
+                { text: "Holonomic robots use open-loop control without feedback, while nonholonomic robots require closed-loop control with sensor integration", correct: false },
+                { text: "Holonomic robots operate in structured indoor environments, while nonholonomic robots are designed for unstructured outdoor terrain", correct: false }
+            ],
+            explanation: "Holonomic robots have equal DOF and CDOF (e.g., omnidirectional). Nonholonomic robots have constraints limiting instantaneous motion directions (e.g., car-like robots cannot strafe)."
+        },
+        {
+            id: 11, category: "Robot Basics", isSketch: false,
+            question: "What is the duty factor of the walking robot? Express it regarding stance and swing phase of the gait cycle",
+            answers: [
+                { text: "Duty factor = stance_time / (stance_time + swing_time), the fraction of gait cycle that a leg is in contact with ground", correct: true },
+                { text: "Duty factor = the ratio of power consumed during locomotion to the total power available from the battery system", correct: false },
+                { text: "Duty factor = the percentage of time the robot spends in active motion compared to stationary observation periods", correct: false }
+            ],
+            explanation: "Duty factor measures how long each leg stays on the ground. Walking typically has duty factor > 0.5 (leg on ground more than half the time), running has duty factor < 0.5."
+        },
+        // Q12-27: Robotic Paradigms
+        {
+            id: 12, category: "Robotic Paradigms", isSketch: false,
+            question: "List three primitives of robotics that are used in robotic paradigms.",
+            answers: [
+                { text: "SENSE (perceive environment), PLAN (deliberate and decide), ACT (execute actions)", correct: true },
+                { text: "INITIALIZE (system startup), EXECUTE (run algorithms), TERMINATE (shutdown procedures) for lifecycle management", correct: false },
+                { text: "OBSERVE (gather data), LEARN (update models), ADAPT (modify parameters) for machine learning integration", correct: false }
+            ],
+            explanation: "The three primitives are SENSE (gather information), PLAN (use information to decide actions), and ACT (execute the decided actions). Different paradigms organize these differently."
+        },
+        {
+            id: 13, category: "Robotic Paradigms", isSketch: false,
+            question: "What are the three fundamental robotic paradigms?",
+            answers: [
+                { text: "Hierarchical (deliberative), Reactive (behavior-based), and Hybrid (deliberative/reactive)", correct: true },
+                { text: "Model-based (physics simulation), Data-driven (machine learning), and Rule-based (expert systems) paradigms", correct: false },
+                { text: "Synchronous (time-triggered), Asynchronous (event-driven), and Probabilistic (uncertainty handling) paradigms", correct: false }
+            ],
+            explanation: "The three paradigms are: Hierarchical (Sense→Plan→Act), Reactive (Sense→Act, no planning), and Hybrid (combines both with different layers)."
+        },
+        {
+            id: 14, category: "Robotic Paradigms", isSketch: false,
+            question: "Characterize hierarchical robotic paradigm?",
+            answers: [
+                { text: "Sequential Sense→Plan→Act flow: robot first senses, builds world model, plans actions, then executes. All sensing feeds into planning, all actions come from planner", correct: true },
+                { text: "Distributed processing where each subsystem operates independently and communicates through shared memory buffers and message queues", correct: false },
+                { text: "Event-driven architecture where actions are triggered by interrupts and handled by priority-based schedulers in real-time", correct: false }
+            ],
+            explanation: "Hierarchical paradigm uses sequential processing: sense environment → update world model → plan optimal action → execute. It assumes complete world knowledge (closed world assumption)."
+        },
+        {
+            id: 15, category: "Robotic Paradigms", isSketch: false,
+            question: "What is the closed world assumption?",
+            answers: [
+                { text: "The assumption that the world model contains everything the robot needs to know - if something is not in the model, it doesn't exist or isn't relevant", correct: true },
+                { text: "The assumption that all sensor readings are perfectly accurate and require no filtering or uncertainty quantification in processing", correct: false },
+                { text: "The assumption that the robot's actuators respond instantaneously without delays, friction, or mechanical limitations", correct: false }
+            ],
+            explanation: "Closed world assumption means the robot's world model is complete and accurate. This is often unrealistic in dynamic, uncertain environments."
+        },
+        {
+            id: 16, category: "Robotic Paradigms", isSketch: false,
+            question: "What is the frame problem?",
+            answers: [
+                { text: "The challenge of determining what changes and what stays the same when an action is taken, and efficiently updating only the relevant parts of the world model", correct: true },
+                { text: "The challenge of maintaining consistent coordinate transformations between multiple reference frames as the robot moves through space", correct: false },
+                { text: "The challenge of synchronizing data streams from multiple sensors that operate at different sampling rates and have varying latencies", correct: false }
+            ],
+            explanation: "The frame problem asks: when something changes, what else changes and what remains unchanged? Efficiently representing and updating this is computationally challenging."
+        },
+        {
+            id: 17, category: "Robotic Paradigms", isSketch: false,
+            question: "How can we address the frame problem challenge?",
+            answers: [
+                { text: "Use reactive behaviors that don't require complete world models, employ local representations, or use efficient update rules that only modify affected state variables", correct: true },
+                { text: "Implement parallel processing across multiple CPU cores to distribute the computational load and increase update throughput", correct: false },
+                { text: "Pre-compute all possible world states during an offline phase and store them in lookup tables for fast runtime access", correct: false }
+            ],
+            explanation: "Solutions include: reactive architectures (no world model), locality assumptions, hierarchical representations, and STRIPS-like planners that explicitly list what changes."
+        },
+        {
+            id: 18, category: "Robotic Paradigms", isSketch: true,
+            question: "Sketch an example of block diagram of the hierarchical controller. Draw typical blocks and links.",
+            answers: [
+                { text: "Diagram with: SENSORS → PERCEPTION → WORLD MODEL → PLANNING → EXECUTION → ACTUATORS, with arrows showing sequential flow and world model feeding into planning", correct: true },
+                { text: "Diagram with: SENSOR FUSION → KALMAN FILTER → STATE ESTIMATION → PID CONTROLLER → MOTOR DRIVERS, showing signal processing flow", correct: false },
+                { text: "Diagram with: DATA LOGGER → DATABASE → ANALYSIS → REPORTING → VISUALIZATION, showing information management architecture", correct: false }
+            ],
+            explanation: "Hierarchical controller sketch shows linear flow: Sensors feed Perception, which updates World Model, which feeds Planning/Deliberation, which drives Motor Control and Actuators."
+        },
+        {
+            id: 19, category: "Robotic Paradigms", isSketch: false,
+            question: "Characterize reactive robotic paradigm?",
+            answers: [
+                { text: "Direct Sense→Act coupling: multiple parallel behaviors map sensor inputs directly to actions without world models or explicit planning. Behaviors compete or combine for control", correct: true },
+                { text: "Centralized decision-making where all sensor data is processed by a single algorithm that outputs optimal actions after complete analysis", correct: false },
+                { text: "Time-sharing approach where different control modules take turns executing in round-robin fashion with fixed time slices", correct: false }
+            ],
+            explanation: "Reactive paradigm uses behaviors as direct sensor-motor mappings. No world model, no planning. Emergent intelligence from behavior interaction. Fast response, works in dynamic environments."
+        },
+        {
+            id: 20, category: "Robotic Paradigms", isSketch: false,
+            question: "List of three categories of behaviors and briefly characterize them.",
+            answers: [
+                { text: "Reflexive (fixed stimulus-response), Reactive (responses based on current percepts), Deliberative (responses involving reasoning and goals)", correct: true },
+                { text: "Locomotion behaviors (movement control), Manipulation behaviors (object handling), and Communication behaviors (information exchange)", correct: false },
+                { text: "Deterministic behaviors (predictable outputs), Stochastic behaviors (randomized outputs), and Adaptive behaviors (learned outputs)", correct: false }
+            ],
+            explanation: "Behaviors range from simple reflexes (hardwired responses) to reactive (sensor-driven but flexible) to deliberative (goal-directed with internal state)."
+        },
+        {
+            id: 21, category: "Robotic Paradigms", isSketch: false,
+            question: "Can you characterize three types of the reflexive behaviors?",
+            answers: [
+                { text: "Taxes (move toward/away from stimulus), Kineses (change speed based on stimulus intensity), Fixed-action patterns (triggered sequences that run to completion)", correct: true },
+                { text: "Approach reflexes (move toward targets), Avoidance reflexes (move away from obstacles), and Stabilization reflexes (maintain balance and posture)", correct: false },
+                { text: "Primary reflexes (innate responses), Secondary reflexes (learned associations), and Tertiary reflexes (context-dependent adaptations)", correct: false }
+            ],
+            explanation: "Taxes orient toward/away from stimuli. Kineses adjust activity levels. Fixed-action patterns are complete sequences triggered by releasers (like a grasping sequence)."
+        },
+        {
+            id: 22, category: "Robotic Paradigms", isSketch: false,
+            question: "Briefly describe typical components of the hybrid (deliberative/reactive) paradigm.",
+            answers: [
+                { text: "Three layers: Reactive layer (fast behaviors), Sequencing/Executive layer (coordinates behaviors), Deliberative layer (planning, world modeling). Reactive handles immediate needs, deliberative handles goals", correct: true },
+                { text: "Two-layer design: Hardware abstraction layer (sensor/actuator interfaces) and Application layer (user-defined algorithms and logic)", correct: false },
+                { text: "Four components: Input processing module, State machine controller, Output generation module, and Logging/monitoring subsystem", correct: false }
+            ],
+            explanation: "Hybrid combines: deliberative layer (slow, plans, world model), executive/sequencer layer (activates behaviors, monitors), and reactive layer (fast behaviors for immediate response)."
+        },
+        {
+            id: 23, category: "Robotic Paradigms", isSketch: true,
+            question: "Sketch a control schema of a mobile robot with basic blocks and links.",
+            answers: [
+                { text: "Diagram showing: Sensors → Perceptual Schemas → Motor Schemas → Actuators, with multiple parallel schemas and behavior coordination/arbitration mechanisms", correct: true },
+                { text: "Diagram showing: GPS Module → Path Calculator → Velocity Controller → Wheel Encoders, with feedback loops for odometry correction", correct: false },
+                { text: "Diagram showing: Camera Input → Neural Network → Classification Output → Decision Tree → Action Selection, for vision-based control", correct: false }
+            ],
+            explanation: "Schema-based control shows perceptual schemas processing sensors, feeding motor schemas that generate potential fields or commands, with arbitration combining outputs to actuators."
+        },
+        {
+            id: 24, category: "Robotic Paradigms", isSketch: false,
+            question: "Characterize main differences for Feedback and feedforward motion controller.",
+            answers: [
+                { text: "Feedback uses sensor measurements to correct errors (closed-loop), while feedforward predicts required control based on model without measuring output (open-loop)", correct: true },
+                { text: "Feedback operates at the joint level for individual actuators, while feedforward operates at the task level for end-effector positioning", correct: false },
+                { text: "Feedback handles steady-state errors in position control, while feedforward specifically handles dynamic errors during acceleration phases", correct: false }
+            ],
+            explanation: "Feedback (closed-loop) measures actual output and corrects errors. Feedforward (open-loop) uses system model to predict required input. Often combined for best performance."
+        },
+        {
+            id: 25, category: "Robotic Paradigms", isSketch: false,
+            question: "What are the typical control loop periods (frequencies) of the control layers, aka temporal decomposition?",
+            answers: [
+                { text: "Deliberative layer: seconds to minutes, Executive/sequencing: 100ms-1s, Reactive/servo layer: 1-10ms (high frequency for stability)", correct: true },
+                { text: "All layers operate synchronously at a master clock rate determined by the slowest component to ensure data consistency", correct: false },
+                { text: "Control frequencies are dynamically adjusted based on CPU load, ranging from 10Hz during idle to 1000Hz during active motion", correct: false }
+            ],
+            explanation: "Temporal decomposition: reactive/servo loops run fast (100Hz+) for stability, behavioral layer moderate (1-10Hz), deliberative slow (seconds) as planning takes time."
+        },
+        // Q26-45: Configuration Space & Path Planning
+        {
+            id: 26, category: "Path Planning", isSketch: false,
+            question: "Define configuration space C and Cfree.",
+            answers: [
+                { text: "C is the space of all possible robot configurations (positions, orientations, joint angles). Cfree is the subset of C where the robot doesn't collide with obstacles (C \\ Cobs)", correct: true },
+                { text: "C is the continuous workspace of the robot end-effector, while Cfree represents discrete waypoints that have been validated as reachable", correct: false },
+                { text: "C is the set of all possible control inputs (velocities, torques), while Cfree represents inputs that don't exceed actuator limits", correct: false }
+            ],
+            explanation: "Configuration space transforms the robot to a point and grows obstacles. C contains all configs, Cobs are colliding configs, Cfree = C \\ Cobs are valid configs."
+        },
+        {
+            id: 27, category: "Path Planning", isSketch: false,
+            question: "Define a path and trajectory within the context of path planning.",
+            answers: [
+                { text: "Path is a continuous curve in Cfree from start to goal (geometric). Trajectory is a path with time parameterization specifying when to be at each point (includes velocities)", correct: true },
+                { text: "Path refers to the planned route computed offline, while trajectory refers to the actual route taken during execution with sensor corrections", correct: false },
+                { text: "Path is computed using global information about the environment, while trajectory is computed using only local sensor measurements", correct: false }
+            ],
+            explanation: "Path: geometric curve τ: [0,1] → Cfree. Trajectory: time-parameterized τ: [0,T] → Cfree with velocity/acceleration constraints. Path is what, trajectory is what and when."
+        },
+        {
+            id: 28, category: "Path Planning", isSketch: true,
+            question: "Show a configuration space for a disk-shaped robot in a polygonal world. Draw a world and the respective configuration space.",
+            answers: [
+                { text: "Sketch showing: workspace with polygonal obstacles, then C-space where obstacles are expanded (Minkowski sum) by the robot's radius, robot becomes a point", correct: true },
+                { text: "Sketch showing: obstacles decomposed into convex regions, with visibility lines connecting all vertices and waypoints marked at intersections", correct: false },
+                { text: "Sketch showing: workspace divided into a uniform grid, with each cell labeled as either traversable or blocked based on overlap percentage", correct: false }
+            ],
+            explanation: "For disk robot, C-space obstacles are original obstacles dilated by robot radius (Minkowski sum with disk). The robot becomes a point, simplifying collision checking."
+        },
+        {
+            id: 29, category: "Path Planning", isSketch: false,
+            question: "Briefly describe visibility graph based path planning method",
+            answers: [
+                { text: "Connect start, goal, and all obstacle vertices with straight lines if they don't cross obstacles. Find shortest path through this graph. Produces optimal shortest paths that go around obstacle corners", correct: true },
+                { text: "Construct a Delaunay triangulation of the free space, then find the path that passes through the largest triangles to maximize clearance", correct: false },
+                { text: "Create concentric circles around obstacles at varying distances, connect intersection points to form a roadmap of safe corridors", correct: false }
+            ],
+            explanation: "Visibility graph: nodes are start, goal, obstacle vertices. Edges connect mutually visible nodes. Shortest path hugs obstacle corners. Optimal for point robot among polygons."
+        },
+        {
+            id: 30, category: "Path Planning", isSketch: false,
+            question: "Briefly describe the cell decomposition based method, e.g., trapezoidal decomposition.",
+            answers: [
+                { text: "Divide free space into simple cells (trapezoids) by drawing vertical lines at obstacle vertices. Build adjacency graph of cells. Plan path through cells from start to goal", correct: true },
+                { text: "Recursively subdivide space using a quadtree structure, marking leaf nodes as free or occupied based on obstacle intersection tests", correct: false },
+                { text: "Partition space using Voronoi regions around obstacle centroids, connecting region boundaries to form navigation corridors", correct: false }
+            ],
+            explanation: "Trapezoidal decomposition: sweep vertical lines at vertices, creating trapezoid cells. Build connectivity graph. Path: find cells containing start/goal, search graph for cell sequence."
+        },
+        {
+            id: 31, category: "Path Planning", isSketch: false,
+            question: "What is Shortest Path Map (SPM)?",
+            answers: [
+                { text: "A decomposition of free space into regions where all points in each region have the same combinatorial shortest path structure (same sequence of obstacle vertices)", correct: true },
+                { text: "A precomputed lookup table storing the minimum distance from every grid cell to all possible goal locations for fast query response", correct: false },
+                { text: "A hierarchical tree structure organizing paths by their lengths, enabling efficient retrieval of approximately optimal routes", correct: false }
+            ],
+            explanation: "SPM partitions space so each region's points share the same shortest path topology. Once computed, any query point's shortest path can be found by locating its region."
+        },
+        {
+            id: 32, category: "Path Planning", isSketch: false,
+            question: "What is the Voronoi diagram and how it can be used for path planning?",
+            answers: [
+                { text: "Voronoi diagram divides space into regions closest to each obstacle. Edges are equidistant from obstacles, maximizing clearance. Robot follows Voronoi edges for safest paths", correct: true },
+                { text: "Voronoi diagram partitions space based on travel time to obstacles, accounting for robot velocity limits and acceleration constraints", correct: false },
+                { text: "Voronoi diagram creates a mesh of triangular cells optimized for uniform coverage during area exploration and mapping tasks", correct: false }
+            ],
+            explanation: "Voronoi edges are maximally distant from obstacles. For path planning, retract start/goal to nearest Voronoi edge, navigate along edges. Maximizes safety/clearance but longer paths."
+        },
+        {
+            id: 33, category: "Path Planning", isSketch: false,
+            question: "Characterize differences between path planning based on visibility graph and Voronoi diagram.",
+            answers: [
+                { text: "Visibility graph: shortest paths, paths touch obstacle corners (minimum clearance). Voronoi: maximum clearance paths, longer than optimal, paths stay far from obstacles", correct: true },
+                { text: "Visibility graph requires complete knowledge of all obstacles, while Voronoi can be computed incrementally as new obstacles are discovered", correct: false },
+                { text: "Visibility graph works only for convex obstacles, while Voronoi diagram can handle arbitrary non-convex obstacle shapes naturally", correct: false }
+            ],
+            explanation: "Visibility graph optimizes length (paths graze obstacles). Voronoi optimizes clearance (paths equidistant from obstacles). Trade-off between path length and safety."
+        },
+        {
+            id: 34, category: "Path Planning", isSketch: false,
+            question: "Characterize path planning using navigation mesh?",
+            answers: [
+                { text: "Decompose free space into convex polygons (mesh). Movement within a polygon is trivial (straight line). Build graph of polygon adjacencies, find path through connected polygons", correct: true },
+                { text: "Create a network of predefined waypoints connected by straight edges, where each waypoint is manually placed by designers in accessible locations", correct: false },
+                { text: "Generate a probabilistic roadmap by randomly sampling configurations and connecting them based on local path feasibility checks", correct: false }
+            ],
+            explanation: "NavMesh uses convex polygon decomposition. Any two points in a convex polygon connect via straight line. Graph search finds polygon sequence, then path through polygon edges/centers."
+        },
+        {
+            id: 35, category: "Path Planning", isSketch: false,
+            question: "Characterize grid-based path planning methods?",
+            answers: [
+                { text: "Discretize space into regular cells (grid). Each cell is free or occupied. Use graph search (A*, Dijkstra) on grid connectivity. Simple but resolution-dependent and memory intensive", correct: true },
+                { text: "Represent the environment as a topological graph where nodes are landmarks and edges encode qualitative spatial relationships between regions", correct: false },
+                { text: "Use potential field methods where goals create attractive forces and obstacles create repulsive forces, following the gradient descent path", correct: false }
+            ],
+            explanation: "Grid-based: overlay grid, mark cells free/occupied, search 4/8-connected neighbors. Simple implementation, resolution trade-off (fine=accurate but slow, coarse=fast but imprecise)."
+        },
+        {
+            id: 36, category: "Path Planning", isSketch: false,
+            question: "What type of grid-based approach do you know for representing 3D grid maps?",
+            answers: [
+                { text: "Octrees (recursive subdivision into 8 octants), voxel grids, and multi-resolution approaches that use finer grids near obstacles", correct: true },
+                { text: "Point cloud representations where each measured point is stored with its exact coordinates and surface normal vector", correct: false },
+                { text: "Signed distance fields that store the distance to the nearest surface at each point in a regular 3D lattice structure", correct: false }
+            ],
+            explanation: "3D representations: voxel grids (3D cells), octrees (hierarchical, efficient for sparse environments), multi-resolution grids. Octrees save memory by using larger cells in free space."
+        },
+        {
+            id: 37, category: "Path Planning", isSketch: false,
+            question: "Describe based steps of grid-based planning",
+            answers: [
+                { text: "1) Discretize space into grid, 2) Mark cells as free/occupied, 3) Define start/goal cells, 4) Search graph (A*, Dijkstra) over cell connectivity, 5) Extract and smooth path", correct: true },
+                { text: "1) Build potential field from obstacles, 2) Compute gradient at robot position, 3) Follow negative gradient, 4) Repeat until reaching goal or local minimum", correct: false },
+                { text: "1) Sample random configurations, 2) Connect to k-nearest neighbors, 3) Build roadmap graph, 4) Query path between start and goal using graph search", correct: false }
+            ],
+            explanation: "Grid planning: discretize → occupy cells with obstacles → define connectivity (4 or 8-connected) → apply graph search → post-process path (smoothing, shortcutting)."
+        },
+        {
+            id: 38, category: "Path Planning", isSketch: false,
+            question: "What is Bresenham's line algorithm and how you will use it in path planning?",
+            answers: [
+                { text: "Algorithm to rasterize a line into grid cells efficiently. In path planning, used for fast line-of-sight checks to determine if straight path between two cells crosses obstacles", correct: true },
+                { text: "Algorithm to interpolate smooth curves through waypoints, generating trajectories with continuous velocity and acceleration profiles", correct: false },
+                { text: "Algorithm to compute the convex hull of obstacle vertices, simplifying collision detection by reducing the number of polygon edges", correct: false }
+            ],
+            explanation: "Bresenham's efficiently determines which cells a line passes through. Used for collision checking (does path cross occupied cell?) and visibility testing in grid maps."
+        },
+        {
+            id: 39, category: "Path Planning", isSketch: false,
+            question: "What is Distance Transform based path planning and how it works?",
+            answers: [
+                { text: "Compute distance from each cell to nearest obstacle (or goal). Navigate by following gradient of distance field - either away from obstacles (wavefront from goal) or toward goal (gradient descent)", correct: true },
+                { text: "Apply probabilistic filters to estimate the robot's position uncertainty, propagating beliefs through a Markov chain motion model", correct: false },
+                { text: "Transform sensor readings into a unified coordinate frame using homogeneous transformation matrices and sensor calibration parameters", correct: false }
+            ],
+            explanation: "Distance transform assigns each cell its distance to obstacles (for clearance) or to goal (for navigation). Following gradient of goal-distance leads to goal. Can combine both for safe paths."
+        },
+        {
+            id: 40, category: "Path Planning", isSketch: false,
+            question: "How can you speed graph search algorithms for grid-based representation?",
+            answers: [
+                { text: "Use hierarchical representations (quadtrees), Jump Point Search to skip uniform regions, bidirectional search, better heuristics, or precomputation of shortcuts", correct: true },
+                { text: "Reduce the number of obstacles by merging nearby ones into larger bounding boxes, simplifying collision detection computations", correct: false },
+                { text: "Limit the search to only the cells within a fixed radius of the straight-line path from start to goal, reducing the search space", correct: false }
+            ],
+            explanation: "Speedups: JPS (skip symmetric paths), hierarchical planning (coarse then fine), precomputed distances, parallel search, memory-efficient structures, domain-specific heuristics."
+        },
+        {
+            id: 41, category: "Path Planning", isSketch: false,
+            question: "Characterize main ideas of the Jump Point Search algorithm for grid-based path planning.",
+            answers: [
+                { text: "Prune symmetric paths by identifying jump points - cells where direction must change. Skip intermediate cells in uniform regions, only expand jump points. Much faster than A* on uniform grids", correct: true },
+                { text: "Maintain multiple parallel search frontiers that explore different regions simultaneously and merge when they meet in the middle", correct: false },
+                { text: "Use reinforcement learning to train a policy network that predicts the best next cell to expand based on the current search state", correct: false }
+            ],
+            explanation: "JPS exploits grid symmetry. Instead of expanding all neighbors, it 'jumps' along straight lines until hitting obstacles or finding forced neighbors. Reduces expanded nodes dramatically."
+        },
+        {
+            id: 42, category: "Path Planning", isSketch: false,
+            question: "How can you improve path length for grid-based optimal path planning?",
+            answers: [
+                { text: "Use any-angle algorithms (Theta*, ANYA) that allow paths not restricted to grid edges, or post-process with path smoothing and shortcutting", correct: true },
+                { text: "Increase grid resolution to capture finer obstacle details, which naturally produces smoother paths with smaller turning angles", correct: false },
+                { text: "Apply spline interpolation to the grid path waypoints, generating curved trajectories that pass through each cell center", correct: false }
+            ],
+            explanation: "Grid paths are suboptimal due to discretization. Solutions: any-angle planners (Theta*, Field D*), path smoothing, line-of-sight shortcuts, or higher connectivity (16-connected)."
+        },
+        {
+            id: 43, category: "Path Planning", isSketch: false,
+            question: "Briefly describe the main ideas of the D* Lite algorithm.",
+            answers: [
+                { text: "Incremental replanning algorithm: initially plans from goal to start, maintains costs. When obstacles change, efficiently updates only affected portions of search tree instead of replanning from scratch", correct: true },
+                { text: "A parallel version of Dijkstra's algorithm that distributes the search across multiple CPU cores to reduce computation time", correct: false },
+                { text: "An optimized A* variant that uses machine learning to predict better heuristic values based on training data from similar environments", correct: false }
+            ],
+            explanation: "D* Lite: initial backward search from goal. When map changes (new obstacles discovered), incrementally repair the search tree. Much faster than replanning from scratch in dynamic environments."
+        },
+        // Q44-54: Exploration & Occupancy
+        {
+            id: 44, category: "Exploration", isSketch: false,
+            question: "What type of environment representation for robotic exploration do you know?",
+            answers: [
+                { text: "Occupancy grids, topological maps (graphs of places), feature-based maps (landmarks), hybrid metric-topological maps, and semantic maps", correct: true },
+                { text: "CAD models imported from building blueprints, satellite imagery overlays, and laser-scanned point clouds from survey equipment", correct: false },
+                { text: "RGB image mosaics captured by onboard cameras, depth maps from stereo vision, and thermal signatures from infrared sensors", correct: false }
+            ],
+            explanation: "Representations: metric (occupancy grids, point clouds), topological (connectivity graphs), feature-based (landmark positions), semantic (labeled regions), or hybrids combining multiple."
+        },
+        {
+            id: 45, category: "Exploration", isSketch: false,
+            question: "What is the main idea and benefits of the so-called occupancy grid maps?",
+            answers: [
+                { text: "Discretize space into cells, each storing probability of being occupied. Benefits: simple, handles uncertainty, easy sensor fusion, works with various sensors, supports path planning directly", correct: true },
+                { text: "Store precise geometric models of each obstacle as polygons with vertex coordinates, enabling exact collision detection and physics simulation", correct: false },
+                { text: "Maintain a database of recognized objects with their 3D models and poses, supporting semantic reasoning and object manipulation tasks", correct: false }
+            ],
+            explanation: "Occupancy grids: each cell has P(occupied). Probabilistic fusion of sensor data. Simple representation, handles noise/uncertainty, compatible with planning algorithms, easy to update."
+        },
+        {
+            id: 46, category: "Exploration", isSketch: false,
+            question: "Describe the main assumption considered for a simple update of the occupancy grid maps.",
+            answers: [
+                { text: "Cells are either completely free or occupied, cells are independent random variables (no correlation), and the environment is static (doesn't change over time)", correct: true },
+                { text: "All sensor measurements are Gaussian-distributed with known variance, and the robot's position is perfectly known at all times", correct: false },
+                { text: "Obstacles have uniform reflectance properties, sensors have linear response characteristics, and measurement noise is additive and white", correct: false }
+            ],
+            explanation: "Simple occupancy grid assumptions: binary state (free/occupied), cell independence (enables separate updates), static world. Real extensions handle dynamic objects and correlations."
+        },
+        {
+            id: 47, category: "Exploration", isSketch: false,
+            question: "Characterize main differences between models of sonar and laser sensors utilized for updating occupancy grid maps.",
+            answers: [
+                { text: "Sonar: wide beam cone, lower accuracy, specular reflections, large uncertainty region. Laser: narrow beam, high accuracy, precise measurements, smaller update region per ray", correct: true },
+                { text: "Sonar operates in the visible spectrum while laser uses infrared, leading to different material detection capabilities and ambient light sensitivity", correct: false },
+                { text: "Sonar has longer range but slower update rate, while laser has shorter range but can provide real-time measurements at higher frequencies", correct: false }
+            ],
+            explanation: "Sonar: wide beam (~30°), uncertain which part caused return, specular reflection issues. Laser: narrow beam (<1°), precise range, but can miss thin objects. Different sensor models needed."
+        },
+        {
+            id: 48, category: "Exploration", isSketch: true,
+            question: "Sketch an algorithm for an update of the occupancy grid map using laser sensor model.",
+            answers: [
+                { text: "For each laser ray: trace ray through grid (Bresenham), mark cells along ray as free (decrease probability), mark cell at endpoint as occupied (increase probability), use log-odds for numerical stability", correct: true },
+                { text: "Cluster laser points into segments representing obstacle surfaces, fit lines to each segment, and add the line equations to the map database", correct: false },
+                { text: "Transform laser readings to global coordinates using robot pose, directly set the corresponding cells to occupied without ray tracing", correct: false }
+            ],
+            explanation: "Laser update: ray-cast from sensor, cells before hit are free (low P(occ)), hit cell is occupied (high P(occ)). Use log-odds: l = log(P/(1-P)) for efficient multiplicative updates."
+        },
+        {
+            id: 49, category: "Exploration", isSketch: false,
+            question: "Characterize main challenges (and differences from the single robot) of the multi-robot exploration.",
+            answers: [
+                { text: "Coordination to avoid redundant coverage, task allocation, communication constraints, map merging, relative localization, and balancing exploration vs staying in communication range", correct: true },
+                { text: "Increased power consumption due to communication overhead, higher hardware costs for identical sensor suites, and software complexity for synchronized timing", correct: false },
+                { text: "Mechanical interference when robots operate in close proximity, sensor cross-talk between laser rangefinders, and navigation conflicts in narrow passages", correct: false }
+            ],
+            explanation: "Multi-robot challenges: who explores where (task allocation), avoiding overlap, merging maps, communication limits, relative positioning, coordination overhead vs exploration speedup."
+        },
+        {
+            id: 50, category: "Exploration", isSketch: false,
+            question: "What improvements of simple frontier-based exploration do you know?",
+            answers: [
+                { text: "Utility-based selection (information gain vs travel cost), coordinated multi-robot frontiers, frontier clustering, next-best-view planning, and semantic frontier prioritization", correct: true },
+                { text: "Randomized frontier selection to ensure unpredictable coverage patterns, combined with backtracking to previously visited locations for verification", correct: false },
+                { text: "Spiral expansion patterns starting from the initial position, with fixed step sizes and predetermined turning angles at boundary encounters", correct: false }
+            ],
+            explanation: "Frontier improvements: cost-utility optimization, information-theoretic measures, coordinated assignment for multi-robot, frontier grouping, considering sensor coverage and map quality."
+        },
+        {
+            id: 51, category: "Exploration", isSketch: false,
+            question: "List at least two multi-robot exploration strategies, i.e., task allocation algorithms.",
+            answers: [
+                { text: "Greedy assignment (each robot picks best frontier), Hungarian algorithm (optimal assignment), market-based coordination (auction frontiers), and hierarchical decomposition", correct: true },
+                { text: "Centralized command structure where a master robot assigns tasks to worker robots based on their battery levels and sensor capabilities", correct: false },
+                { text: "Round-robin scheduling where each robot takes turns exploring the next available frontier in a fixed cyclic order", correct: false }
+            ],
+            explanation: "Strategies: greedy (each picks nearest/best), optimal assignment (Hungarian), auction-based (robots bid on frontiers), role-based (leader-follower), and information-theoretic."
+        },
+        // Q52-69: Sampling-based Planning
+        {
+            id: 52, category: "Sampling-based", isSketch: false,
+            question: "What is the main idea of the randomized sampling-based motion planning algorithm?",
+            answers: [
+                { text: "Instead of explicitly constructing Cfree, randomly sample configurations, check collisions, and build a graph/tree connecting valid samples. Probabilistically covers the space without explicit representation", correct: true },
+                { text: "Decompose the configuration space into convex regions using computational geometry, then search through adjacent regions systematically", correct: false },
+                { text: "Apply gradient descent optimization starting from the initial configuration, following the negative gradient of a distance-to-goal cost function", correct: false }
+            ],
+            explanation: "Sampling-based planners avoid explicit Cfree construction. Random samples probe the space, collision detection validates, graph/tree connects samples. Works in high dimensions where explicit methods fail."
+        },
+        {
+            id: 53, category: "Sampling-based", isSketch: false,
+            question: "Briefly describe the main idea of the probabilistic roadmap based approaches.",
+            answers: [
+                { text: "Two phases: 1) Learning - randomly sample Cfree, connect nearby samples to build roadmap graph. 2) Query - connect start/goal to roadmap, search for path. Roadmap reused for multiple queries", correct: true },
+                { text: "Incrementally grow a tree structure from the start configuration, biased toward unexplored regions of the space until reaching the goal", correct: false },
+                { text: "Discretize the configuration space into a regular grid, then apply dynamic programming to find optimal paths through the lattice", correct: false }
+            ],
+            explanation: "PRM: preprocessing builds a roadmap (graph in Cfree). Query phase connects start/goal to roadmap and searches. Amortizes construction cost over multiple queries in same environment."
+        },
+        {
+            id: 54, category: "Sampling-based", isSketch: false,
+            question: "Characterize main differences between multi-query and single-query sampling-based algorithms?",
+            answers: [
+                { text: "Multi-query (PRM): precompute roadmap, reuse for many queries, good when environment is static. Single-query (RRT): build tree for specific start/goal, no preprocessing, better for changing environments", correct: true },
+                { text: "Multi-query algorithms use deterministic sampling patterns, while single-query algorithms rely on randomized exploration strategies", correct: false },
+                { text: "Multi-query algorithms optimize for path length, while single-query algorithms optimize for computation time at the expense of path quality", correct: false }
+            ],
+            explanation: "Multi-query (PRM) invests in preprocessing, amortized over queries. Single-query (RRT) focuses exploration toward specific goal, no reuse. Choice depends on query frequency and environment stability."
+        },
+        {
+            id: 55, category: "Sampling-based", isSketch: false,
+            question: "What are the requirements on the function to be called path, collision-free, and feasible?",
+            answers: [
+                { text: "Path: continuous curve in C. Collision-free: path stays entirely in Cfree (no obstacle intersection). Feasible: satisfies all kinematic/dynamic constraints of the robot (turning radius, velocity limits)", correct: true },
+                { text: "Path: discrete sequence of waypoints. Collision-free: waypoints avoid obstacle centers. Feasible: waypoints are within the robot's communication range", correct: false },
+                { text: "Path: polynomial trajectory function. Collision-free: trajectory derivative is bounded. Feasible: trajectory can be computed in polynomial time", correct: false }
+            ],
+            explanation: "Path: geometric curve τ:[0,1]→C. Collision-free: τ(s)∈Cfree ∀s. Feasible: satisfies differential constraints (e.g., Dubins car curvature limit). Feasible implies collision-free for physical robots."
+        },
+        {
+            id: 56, category: "Sampling-based", isSketch: false,
+            question: "Describe formally a feasible path planning.",
+            answers: [
+                { text: "Given start q_init, goal q_goal, find continuous path τ:[0,1]→Cfree such that τ(0)=q_init, τ(1)=q_goal, and τ satisfies all kinematic/dynamic constraints, or report no such path exists", correct: true },
+                { text: "Given a cost function c(q), find configuration q* that minimizes c(q) subject to the constraint that q* lies within the workspace boundaries", correct: false },
+                { text: "Given a set of intermediate waypoints W, find the ordering π that minimizes the total Euclidean distance when visiting waypoints in order π", correct: false }
+            ],
+            explanation: "Formal feasible planning: find τ such that τ(0)=q_start, τ(1)=q_goal, τ(s)∈Cfree ∀s∈[0,1], and τ is executable given robot's motion constraints."
+        },
+        {
+            id: 57, category: "Sampling-based", isSketch: false,
+            question: "Describe formally a optimal path planning.",
+            answers: [
+                { text: "Find a feasible path τ* that minimizes a cost function c(τ) (e.g., path length, time, energy) among all feasible paths: τ* = argmin{c(τ) : τ is feasible}", correct: true },
+                { text: "Find a path τ that maximizes the clearance from obstacles at every point along the trajectory, ensuring maximum safety margins", correct: false },
+                { text: "Find a path τ that balances exploration of unknown areas with exploitation of known safe corridors using a multi-objective formulation", correct: false }
+            ],
+            explanation: "Optimal planning: among all feasible paths, find one minimizing cost (length, time, energy). τ* = argmin c(τ) subject to feasibility constraints."
+        },
+        {
+            id: 58, category: "Sampling-based", isSketch: false,
+            question: "What does it mean an algorithm is probabilistically complete?",
+            answers: [
+                { text: "If a solution exists, the probability of finding it approaches 1 as running time (or samples) approaches infinity. May not find solution in finite time, but won't incorrectly report failure if solution exists", correct: true },
+                { text: "The algorithm produces correct results with probability proportional to the problem complexity, with higher success rates for simpler planning instances", correct: false },
+                { text: "The algorithm terminates with a valid solution or failure indication within a bounded number of iterations that depends on problem size", correct: false }
+            ],
+            explanation: "Probabilistically complete: P(finding solution | solution exists) → 1 as samples → ∞. RRT and PRM are probabilistically complete. Not guaranteed in finite time, but increasingly likely."
+        },
+        {
+            id: 59, category: "Sampling-based", isSketch: false,
+            question: "What is the asymptotic optimality?",
+            answers: [
+                { text: "As the number of samples approaches infinity, the cost of the returned solution converges almost surely to the optimal cost. The solution quality improves and approaches optimal with more samples", correct: true },
+                { text: "The algorithm achieves the best possible worst-case time complexity for the given problem class, matching theoretical lower bounds", correct: false },
+                { text: "The algorithm's memory usage grows at the slowest possible rate relative to problem size while maintaining solution quality guarantees", correct: false }
+            ],
+            explanation: "Asymptotically optimal: P(cost(solution) → optimal cost) = 1 as n → ∞. RRT* and PRM* are asymptotically optimal. Basic RRT is NOT asymptotically optimal."
+        },
+        {
+            id: 60, category: "Sampling-based", isSketch: false,
+            question: "What are the properties of the simplified PRM algorithm?",
+            answers: [
+                { text: "Probabilistically complete, can answer multiple queries efficiently, works well in high dimensions, but not asymptotically optimal in basic form, preprocessing can be expensive", correct: true },
+                { text: "Deterministically complete with guaranteed termination, produces globally optimal paths, but requires explicit obstacle representation in closed form", correct: false },
+                { text: "Resolution complete depending on grid density, produces locally optimal paths, and scales linearly with the number of obstacles in the environment", correct: false }
+            ],
+            explanation: "PRM: probabilistically complete, multi-query efficient, scales to high dimensions. Limitations: preprocessing cost, connection strategy affects quality, basic version not asymptotically optimal."
+        },
+        {
+            id: 61, category: "Sampling-based", isSketch: false,
+            question: "Briefly describe main idea of the Rapidly-exploring Random Tree (RRT) algorithm.",
+            answers: [
+                { text: "Incrementally build tree from start: sample random point, find nearest tree node, extend toward sample by step size, add new node if collision-free. Tree rapidly explores space with bias toward unexplored regions", correct: true },
+                { text: "Construct a complete roadmap graph during preprocessing, then use A* search to find paths between any query start and goal configurations", correct: false },
+                { text: "Apply potential field methods with random perturbations to escape local minima, guiding the robot toward the goal through gradient descent", correct: false }
+            ],
+            explanation: "RRT: sample q_rand, find q_near in tree, extend toward q_rand by ε, add q_new if valid. Voronoi bias: nodes with larger Voronoi regions more likely selected, driving exploration to unexplored areas."
+        },
+        {
+            id: 62, category: "Sampling-based", isSketch: false,
+            question: "Is the RRT optimal planning algorithm?",
+            answers: [
+                { text: "No, basic RRT is not optimal. It finds feasible paths quickly but they are typically suboptimal with unnecessary detours. The first path found is kept without improvement", correct: true },
+                { text: "Yes, RRT produces optimal paths because the Voronoi bias ensures uniform coverage of the configuration space during exploration", correct: false },
+                { text: "Yes, RRT converges to optimal paths given sufficient samples because random sampling eliminates systematic bias in the search", correct: false }
+            ],
+            explanation: "Basic RRT is NOT optimal. It's greedy - once a path is found, it's not improved. Paths have random detours based on sampling order. RRT* adds rewiring to achieve asymptotic optimality."
+        },
+        {
+            id: 63, category: "Sampling-based", isSketch: false,
+            question: "Is the RRT asymptotically optimal algorithm?",
+            answers: [
+                { text: "No, basic RRT is not asymptotically optimal. Even with infinite samples, the solution cost does not converge to optimal. RRT* (with rewiring) is needed for asymptotic optimality", correct: true },
+                { text: "Yes, basic RRT achieves asymptotic optimality because the tree structure naturally prunes suboptimal branches over time", correct: false },
+                { text: "Yes, RRT's random sampling strategy guarantees convergence to optimal solutions as the sample density increases uniformly", correct: false }
+            ],
+            explanation: "RRT is NOT asymptotically optimal. Karaman & Frazzoli proved RRT converges to a suboptimal solution with probability 1. RRT* adds rewiring step and IS asymptotically optimal."
+        },
+        {
+            id: 64, category: "Sampling-based", isSketch: false,
+            question: "Describe briefly Rapidly-exploring Random Graph (RRG) algorithm.",
+            answers: [
+                { text: "Like RRT but maintains a graph instead of tree: each new sample connects to ALL nearby nodes within a radius (not just nearest). Provides multiple paths, is asymptotically optimal, but uses more memory", correct: true },
+                { text: "A variant of RRT that uses multiple trees growing from both start and goal, merging when they meet in the middle of the space", correct: false },
+                { text: "An extension of PRM that adds samples incrementally during query time rather than during a separate preprocessing phase", correct: false }
+            ],
+            explanation: "RRG extends RRT by connecting new nodes to all neighbors within radius r(n)=γ(log(n)/n)^(1/d). Creates graph (not tree), provides redundant paths. Asymptotically optimal but higher memory/computation."
+        },
+        {
+            id: 65, category: "Sampling-based", isSketch: false,
+            question: "What asymptotically optimal randomized sampling-based algorithm do you known?",
+            answers: [
+                { text: "RRT* (adds rewiring to RRT), RRG (graph-based), PRM* (optimized PRM), BIT* (batch informed trees), FMT* (Fast Marching Tree), and Informed RRT*", correct: true },
+                { text: "Basic RRT, standard PRM, visibility graph methods, and Voronoi diagram planners are all asymptotically optimal by construction", correct: false },
+                { text: "Grid-based A* search, Dijkstra's algorithm on discrete graphs, and wavefront expansion methods achieve asymptotic optimality", correct: false }
+            ],
+            explanation: "Asymptotically optimal: RRT*, RRG, PRM*, FMT*, BIT*, Informed RRT*, RABIT*. Key insight: connection radius must grow as γ(log(n)/n)^(1/d) and rewiring must be performed."
+        },
+        {
+            id: 66, category: "Sampling-based", isSketch: false,
+            question: "What are the improved variants of the asymptotically optimal sampling-based motion planners?",
+            answers: [
+                { text: "Informed RRT* (samples in ellipse after first solution), BIT* (batch processing), RABIT* (regional acceleration), FMT* (forward search), RRT# (fast convergence), and various anytime variants", correct: true },
+                { text: "GPU-parallelized versions that distribute collision checking across thousands of cores, reducing planning time by orders of magnitude", correct: false },
+                { text: "Cloud-based implementations that offload computation to remote servers, enabling planning on resource-constrained embedded platforms", correct: false }
+            ],
+            explanation: "Improvements: Informed RRT* (focused sampling), BIT*/ABIT* (batch informed search), FMT* (forward marching), RRT# (quick convergence), lazy evaluation variants, parallel implementations."
+        },
+        // Q67-86: Multi-Goal Planning
+        {
+            id: 67, category: "Multi-Goal Planning", isSketch: false,
+            question: "What is the Multi-Goal Path Planning (MTP) problem?",
+            answers: [
+                { text: "Find a path visiting a set of goal locations/regions, typically minimizing total path length or time. Combines motion planning with combinatorial optimization (visiting order)", correct: true },
+                { text: "Coordinate multiple robots to each reach their individual goal locations simultaneously while avoiding collisions with each other", correct: false },
+                { text: "Plan a trajectory that satisfies multiple objective functions simultaneously, balancing trade-offs between path length, safety, and energy consumption", correct: false }
+            ],
+            explanation: "MTP: given goals G={g1,...,gn}, find order and paths visiting all goals. Combines TSP-like sequencing with motion planning for paths between goals. NP-hard in general."
+        },
+        {
+            id: 68, category: "Multi-Goal Planning", isSketch: false,
+            question: "What is the main difficulty of the Multi-Goal Path Planning problem to use conventional solvers for the Traveling Salesman Problem (TSP)?",
+            answers: [
+                { text: "TSP assumes known distances between cities, but in motion planning the path cost between goals depends on approach direction, obstacles, and may require expensive path planning queries", correct: true },
+                { text: "TSP solvers require integer coordinates for all cities, but robot configurations are represented as continuous-valued vectors in high-dimensional spaces", correct: false },
+                { text: "TSP assumes symmetric distances between cities, but motion planning always produces asymmetric costs due to gravitational effects on energy consumption", correct: false }
+            ],
+            explanation: "TSP needs distance matrix. In motion planning: distances aren't Euclidean, depend on obstacles, may be asymmetric (approach direction matters), and computing each distance needs path planning."
+        },
+        {
+            id: 69, category: "Multi-Goal Planning", isSketch: false,
+            question: "Describe formally a solution to the multi-goal motion planning problem as a multi-goal path. What is required to call the solution admissible?",
+            answers: [
+                { text: "Multi-goal path τ visits all goals in some order. Admissible solution: path is collision-free, satisfies robot constraints, and visits all required goals (not necessarily optimal, just valid)", correct: true },
+                { text: "Admissible solution must visit goals in order of decreasing priority, with higher priority goals reached before lower priority ones regardless of path length", correct: false },
+                { text: "Admissible solution must maintain minimum clearance from all obstacles throughout the entire trajectory, ensuring safety margins are never violated", correct: false }
+            ],
+            explanation: "Solution: sequence (g_π(1),...,g_π(n)) and paths between consecutive goals. Admissible: all paths feasible, all goals visited. Optimal: additionally minimizes total cost."
+        },
+        {
+            id: 70, category: "Multi-Goal Planning", isSketch: false,
+            question: "List main approaches for solving the multi-goal motion planning (MGMP) problem.",
+            answers: [
+                { text: "Decoupled (solve TSP then plan paths), coupled (joint optimization), insertion heuristics, sampling-based (grow tree through goals), and learning-based approaches like SOM", correct: true },
+                { text: "Exhaustive search through all possible goal orderings, dynamic programming on discretized state space, and branch-and-bound with pruning heuristics", correct: false },
+                { text: "Linear programming relaxation of integer constraints, simulated annealing with neighborhood operators, and ant colony optimization with pheromone trails", correct: false }
+            ],
+            explanation: "Approaches: decoupled (TSP + motion planning), coupled (simultaneous), SOM-based (neural adaptation), genetic algorithms, sampling-based trees visiting goals, heuristic insertion methods."
+        },
+        {
+            id: 71, category: "Multi-Goal Planning", isSketch: false,
+            question: "What is the inspection planning and how it can be addressed by a decoupled approach?",
+            answers: [
+                { text: "Plan path to inspect all parts of an object/area with sensors. Decoupled: 1) generate viewpoints covering target, 2) solve TSP/TSPN over viewpoints, 3) plan collision-free paths between viewpoints", correct: true },
+                { text: "Continuously move the robot in a predefined spiral pattern around the target object until all surfaces have been scanned by the sensor", correct: false },
+                { text: "Position the robot at a single optimal viewpoint that maximizes the visible surface area of the target through sensor field-of-view optimization", correct: false }
+            ],
+            explanation: "Inspection: ensure sensor covers all targets. Decoupled: compute viewing positions (set cover), sequence views (TSP), connect with collision-free paths. Suboptimal but practical."
+        },
+        {
+            id: 72, category: "Multi-Goal Planning", isSketch: false,
+            question: "List TSP solvers you are aware of.",
+            answers: [
+                { text: "Exact: branch-and-bound, dynamic programming (Held-Karp), ILP. Heuristics: nearest neighbor, Christofides, 2-opt/3-opt local search, LKH (Lin-Kernighan), genetic algorithms, SOM", correct: true },
+                { text: "Gradient descent optimization on the tour cost function, Newton-Raphson iteration for finding local minima, and conjugate gradient methods", correct: false },
+                { text: "Monte Carlo tree search with random rollouts, deep reinforcement learning with policy networks, and transformer-based sequence prediction models", correct: false }
+            ],
+            explanation: "Exact (small n): DP O(n²2^n), branch-and-bound, ILP. Heuristics: construction (nearest neighbor, insertion) + improvement (2-opt, 3-opt, LKH). Meta-heuristics: SA, GA, ACO, SOM."
+        },
+        {
+            id: 73, category: "Multi-Goal Planning", isSketch: false,
+            question: "List two approximation algorithms for the traveling salesman problem (TSP) and provide their approximation factors?",
+            answers: [
+                { text: "Christofides algorithm: 1.5-approximation for metric TSP. MST-based (double-tree): 2-approximation for metric TSP. Nearest neighbor: no constant factor guarantee", correct: true },
+                { text: "Greedy insertion heuristic: 1.1-approximation for all TSP variants. Random tour with local search: 1.05-approximation when enough iterations are used", correct: false },
+                { text: "Simulated annealing: 1.2-approximation with logarithmic cooling. Genetic algorithm: 1.3-approximation when population size exceeds problem size", correct: false }
+            ],
+            explanation: "Christofides: MST + minimum matching on odd-degree vertices, 1.5-approximation. Double-tree (MST + shortcutting): 2-approximation. Both require triangle inequality (metric TSP)."
+        },
+        {
+            id: 74, category: "Multi-Goal Planning", isSketch: false,
+            question: "Define formally the traveling salesman problem with neighborhoods (TSPN).",
+            answers: [
+                { text: "Given regions R1,...,Rn, find shortest tour that visits at least one point in each region. Generalization of TSP where 'cities' become regions - robot can visit anywhere inside region", correct: true },
+                { text: "Given cities with time windows, find shortest tour that visits each city within its specified time interval while respecting travel times", correct: false },
+                { text: "Given cities with varying visit durations, find tour that minimizes total time including both travel and service times at each location", correct: false }
+            ],
+            explanation: "TSPN: given regions {R_i}, find tour τ minimizing length such that τ∩R_i≠∅ for all i. Adds freedom of choosing visit point within each region, making it both harder and potentially shorter."
+        },
+        {
+            id: 75, category: "Multi-Goal Planning", isSketch: false,
+            question: "List approaches to solve the TSPN.",
+            answers: [
+                { text: "Discretization (sample points in regions, solve TSP), SOM-based adaptation, decoupled (TSP on region centers + optimization), MILP formulations, and genetic algorithms", correct: true },
+                { text: "Dynamic programming with state space defined by region boundaries, A* search with admissible heuristics based on region distances, and Dijkstra on region connectivity graph", correct: false },
+                { text: "Convex optimization relaxation of the tour constraints, quadratic programming with region membership constraints, and semidefinite programming relaxations", correct: false }
+            ],
+            explanation: "TSPN approaches: sample regions → TSP, alternating optimization (fix tour, optimize points; fix points, optimize tour), SOM ring adaptation, MILP with region constraints, noon-bean transformation."
+        },
+        {
+            id: 76, category: "Multi-Goal Planning", isSketch: false,
+            question: "Characterize main differences between the traveling salesman problem (TSP) and TSP with neighborhoods (TSPN).",
+            answers: [
+                { text: "TSP: visit exact points, distances fixed. TSPN: visit regions, can choose where in each region to visit, distances depend on chosen points. TSPN solution can be shorter than TSP on region centers", correct: true },
+                { text: "TSP uses Euclidean distances between points, while TSPN uses Manhattan distances to account for grid-based robot motion constraints", correct: false },
+                { text: "TSP assumes symmetric travel costs, while TSPN handles asymmetric costs due to wind or terrain effects on robot energy consumption", correct: false }
+            ],
+            explanation: "TSP: fixed city locations. TSPN: region flexibility allows shorter tours by visiting convenient points. TSPN is harder (continuous + combinatorial) but potentially better solutions."
+        },
+        {
+            id: 77, category: "Multi-Goal Planning", isSketch: false,
+            question: "Describe the main idea of the modified unsupervised learning for the TSP to solve TSPN.",
+            answers: [
+                { text: "Self-Organizing Map (SOM): ring of neurons adapts to regions. Winner neuron (closest to presented region) and neighbors move toward region. Ring gradually forms tour visiting all regions", correct: true },
+                { text: "Convolutional neural network that takes region images as input and outputs tour order probabilities for each region in a single forward pass", correct: false },
+                { text: "Recurrent neural network with attention mechanism that sequentially selects the next region to visit based on learned value estimates", correct: false }
+            ],
+            explanation: "SOM for TSPN: ring of neurons, present regions, winning neuron and neighbors adapt toward region. Neighborhood function shrinks over time. Ring converges to tour visiting all regions."
+        },
+        {
+            id: 78, category: "Multi-Goal Planning", isSketch: false,
+            question: "Describe the idea of the sampling-based decoupled solution of the TSPN.",
+            answers: [
+                { text: "1) Sample representative points from each region, 2) Compute distance matrix between samples (possibly using motion planner), 3) Solve TSP on samples, 4) Refine visit points within regions", correct: true },
+                { text: "1) Compute Voronoi diagram of regions, 2) Find shortest path through Voronoi edges, 3) Project path onto region boundaries, 4) Smooth resulting trajectory", correct: false },
+                { text: "1) Triangulate free space between regions, 2) Build visibility graph on triangle vertices, 3) Search for shortest tour through graph, 4) Post-process to remove redundant waypoints", correct: false }
+            ],
+            explanation: "Decoupled TSPN: discretize regions (boundary/interior samples), compute inter-region distances, solve TSP variant (GTSP if multiple samples per region), optionally refine positions."
+        },
+        {
+            id: 79, category: "Multi-Goal Planning", isSketch: false,
+            question: "Define formally the generalized traveling salesman problem (GTSP)",
+            answers: [
+                { text: "Given cities partitioned into groups S1,...,Sk, find shortest tour visiting exactly one city from each group. Like TSP but choose which city to visit within each group", correct: true },
+                { text: "Given multiple salesmen starting from a depot, find tours for all salesmen that collectively visit all cities while minimizing maximum tour length", correct: false },
+                { text: "Given cities with profits and travel costs, find tour that maximizes profit minus travel cost while respecting time or distance budget", correct: false }
+            ],
+            explanation: "GTSP: cities partitioned into groups, visit exactly one city per group. Combines selection (which city from group) with sequencing (tour order). Can model TSPN via region sampling."
+        },
+        {
+            id: 80, category: "Multi-Goal Planning", isSketch: false,
+            question: "Describe briefly how to transform generalized traveling salesman problem (GTSP) to asymmetric traveling salesman problem (ATSP).",
+            answers: [
+                { text: "Noon-Bean transformation: add large negative intra-cluster edges (ensures exactly one city per cluster visited), modify inter-cluster costs appropriately. Resulting ATSP solution maps back to GTSP solution", correct: true },
+                { text: "Create a copy of each city for each possible predecessor, resulting in an expanded graph where standard TSP algorithms can be directly applied", correct: false },
+                { text: "Introduce dummy nodes between clusters that force the tour to select exactly one entry and exit point per cluster through modified edge weights", correct: false }
+            ],
+            explanation: "Noon-Bean: create ATSP where intra-cluster traversal is 'free' (0 or negative cost cycles within clusters). Forces visiting one node per cluster. Transform back by extracting inter-cluster edges."
+        },
+        {
+            id: 81, category: "Multi-Goal Planning", isSketch: false,
+            question: "Describe the main differences between the formulations of the data collection planning as the traveling salesman problem (TSP) and orienteering problem (OP)",
+            answers: [
+                { text: "TSP: must visit all goals, minimize total distance. OP: limited budget (distance/time), maximize reward collected. OP selects which goals to visit given constraint, TSP visits all", correct: true },
+                { text: "TSP optimizes for total travel distance, while OP optimizes for minimum number of turns or heading changes during the tour execution", correct: false },
+                { text: "TSP requires returning to the starting point, while OP allows one-way paths that terminate at any goal location without return", correct: false }
+            ],
+            explanation: "TSP: visit all, minimize cost. OP: budget limit, maximize collected reward. OP is selective - choose valuable subset within budget. OP generalizes to team orienteering (multiple agents)."
+        },
+        {
+            id: 82, category: "Multi-Goal Planning", isSketch: false,
+            question: "Define formally the orienteering problem (OP).",
+            answers: [
+                { text: "Given locations with rewards r_i, travel costs c_ij, budget B, find path from start to end maximizing total reward collected while total travel cost ≤ B", correct: true },
+                { text: "Given locations with deadlines, find tour visiting all locations where each location is reached before its deadline, minimizing total lateness", correct: false },
+                { text: "Given locations with service times, find tour that minimizes the makespan (time when last location is serviced) subject to vehicle capacity", correct: false }
+            ],
+            explanation: "OP: max Σr_i for visited i, subject to Σc_ij ≤ B (budget). Selective TSP variant - choose which goals to visit. NP-hard, related to knapsack problem."
+        },
+        {
+            id: 83, category: "Multi-Goal Planning", isSketch: false,
+            question: "Define formally the orienteering problem with neighborhoods (OPN).",
+            answers: [
+                { text: "Orienteering with regions instead of points: maximize reward by visiting regions R_i within budget B. Can visit any point inside region to collect its reward", correct: true },
+                { text: "Orienteering where each location has multiple reward levels that depend on how long the robot stays at that location during the visit", correct: false },
+                { text: "Orienteering with stochastic travel costs where the budget constraint must be satisfied with high probability despite cost uncertainty", correct: false }
+            ],
+            explanation: "OPN: like OP but goals are regions. Visit anywhere in region to collect reward. Combines OP's selective nature with TSPN's region flexibility. Even harder than OP or TSPN alone."
+        },
+        // Q84-103: Dubins Vehicle
+        {
+            id: 84, category: "Dubins Vehicle", isSketch: false,
+            question: "Describe the Dubins vehicle model.",
+            answers: [
+                { text: "Car-like model moving forward at constant speed with bounded turning radius (minimum ρ). State: (x, y, θ). Cannot reverse, can only turn left, right, or go straight. Curvature κ ≤ 1/ρ", correct: true },
+                { text: "Differential drive robot with independent wheel velocities that can rotate in place and move along curved arcs of any radius including zero", correct: false },
+                { text: "Holonomic vehicle that can translate in any direction and rotate independently, with separate velocity limits for translation and rotation", correct: false }
+            ],
+            explanation: "Dubins vehicle: constant forward velocity, limited steering (curvature ≤ 1/ρ). State (x,y,θ). Motion primitives: L (turn left), R (turn right), S (straight). Models fixed-wing aircraft, car at constant speed."
+        },
+        {
+            id: 85, category: "Dubins Vehicle", isSketch: false,
+            question: "What is the optimal path connecting two states of the Dubins vehicle?",
+            answers: [
+                { text: "One of six path types: RSR, LSL, RSL, LSR (two arcs with tangent line), or RLR, LRL (three arcs). The shortest path is always one of these combinations", correct: true },
+                { text: "A smooth polynomial spline (cubic or quintic) that interpolates between start and goal states while respecting curvature continuity", correct: false },
+                { text: "A clothoid spiral that provides continuous curvature variation, ensuring smooth steering transitions throughout the maneuver", correct: false }
+            ],
+            explanation: "Dubins proved optimal path is one of {RSR, LSL, RSL, LSR, RLR, LRL} - either CSC (arc-line-arc) or CCC (three arcs). Compute all six, choose shortest. Closed-form solution exists."
+        },
+        {
+            id: 86, category: "Dubins Vehicle", isSketch: false,
+            question: "What planning problems do you know that are related to the data collection planning?",
+            answers: [
+                { text: "TSP, TSPN, GTSP, Orienteering Problem (OP), Coverage Path Planning, Watchman Route Problem, Inspection Planning, and their Dubins variants (DTSP, DOP, etc.)", correct: true },
+                { text: "SLAM (Simultaneous Localization and Mapping), sensor fusion problems, Kalman filtering for state estimation, and particle filter localization", correct: false },
+                { text: "Inverse kinematics for manipulator arms, grasp planning for object manipulation, and motion primitives for humanoid robot locomotion", correct: false }
+            ],
+            explanation: "Related problems: TSP/TSPN (visit all), OP (budget-constrained), Coverage (scan entire area), Inspection (view all features), Prize-collecting TSP, and Dubins variants for curvature-constrained vehicles."
+        },
+        {
+            id: 87, category: "Dubins Vehicle", isSketch: false,
+            question: "Define formally the Dubins touring problem (DTP).",
+            answers: [
+                { text: "Given ordered sequence of points, find minimum-length Dubins path visiting all points in order. Fixed order, only optimize headings at each point and connecting Dubins paths", correct: true },
+                { text: "Given a target region, find the shortest Dubins path that covers the entire region with the vehicle's sensor footprint during a single pass", correct: false },
+                { text: "Given start and goal states, find the Dubins path that maximizes distance from obstacles while staying within the configuration space bounds", correct: false }
+            ],
+            explanation: "DTP: ordered points p1,...,pn. Find θ1,...,θn (headings) and Dubins paths minimizing total length. Sequence fixed, optimize headings. Can be solved by discretization or optimization."
+        },
+        {
+            id: 88, category: "Dubins Vehicle", isSketch: false,
+            question: "Briefly describe how to solve Dubins touring problem (DTP).",
+            answers: [
+                { text: "Discretize headings at each point, create graph with edges as Dubins path costs between (point,heading) pairs, find shortest path through graph visiting points in order", correct: true },
+                { text: "Apply nonlinear optimization with heading angles as continuous variables, using gradient descent to minimize total Dubins path length over all waypoints", correct: false },
+                { text: "Use dynamic programming with state defined by current point and heading, computing optimal cost-to-go for each state in reverse order", correct: false }
+            ],
+            explanation: "DTP solution: discretize headings (e.g., k angles per point), build layered graph where layer i = point i with k heading options, edges = Dubins distances, find shortest path through layers."
+        },
+        {
+            id: 89, category: "Dubins Vehicle", isSketch: false,
+            question: "How you will compute the lower-bound solution of the Dubins touring problem (DTP).",
+            answers: [
+                { text: "Use Euclidean distances (straight lines) as lower bound since Dubins paths are always at least as long as straight-line distance. Or use relaxed heading constraints", correct: true },
+                { text: "Compute the minimum spanning tree of all waypoints and use its total length as a lower bound for the touring problem cost", correct: false },
+                { text: "Solve a linear programming relaxation of the integer program formulation, rounding the fractional solution to get a valid lower bound", correct: false }
+            ],
+            explanation: "Lower bounds: Euclidean tour length (Dubins ≥ straight line), or solve relaxed problem ignoring curvature. Useful for branch-and-bound or evaluating solution quality."
+        },
+        {
+            id: 90, category: "Dubins Vehicle", isSketch: false,
+            question: "Define formally Dubins interval problem (DIP).",
+            answers: [
+                { text: "Connect two points where heading is constrained to an interval [θ_min, θ_max] at each point (not fixed angles). Find shortest Dubins path respecting heading intervals", correct: true },
+                { text: "Find the Dubins path that arrives at the goal within a specified time window while traveling at the minimum turning radius", correct: false },
+                { text: "Determine the range of initial headings from which the goal can be reached using paths shorter than a given length threshold", correct: false }
+            ],
+            explanation: "DIP: endpoints have heading intervals, not fixed angles. Additional flexibility compared to fixed Dubins, but more complex to solve. Used when heading at goals has tolerance."
+        },
+        {
+            id: 91, category: "Dubins Vehicle", isSketch: false,
+            question: "Define formally the Dubins traveling salesman problem (DTSP).",
+            answers: [
+                { text: "Find minimum-length Dubins tour visiting n points. Must determine both visiting order (permutation) and heading at each point. Combines TSP sequencing with Dubins path optimization", correct: true },
+                { text: "Find tour visiting points using straight line segments between waypoints, ignoring vehicle dynamics and curvature constraints entirely", correct: false },
+                { text: "Optimize only the visiting order while using predetermined fixed headings at each point based on geographic orientation", correct: false }
+            ],
+            explanation: "DTSP: find permutation π and headings θ_i minimizing total Dubins tour length. Joint optimization of sequence and headings. Much harder than standard TSP due to coupling."
+        },
+        {
+            id: 92, category: "Dubins Vehicle", isSketch: false,
+            question: "What are the main differences between the ordinary traveling salesman problem (TSP) and Dubins TSP (DTSP)?",
+            answers: [
+                { text: "TSP: symmetric distances, only optimize order. DTSP: asymmetric costs (depends on headings), must optimize both order AND headings at each point. DTSP paths can be much longer than Euclidean", correct: true },
+                { text: "TSP uses exact point-to-point distances while DTSP uses approximated distances based on average turning radius estimates", correct: false },
+                { text: "TSP assumes all locations are on a plane while DTSP handles three-dimensional waypoints with altitude constraints", correct: false }
+            ],
+            explanation: "TSP: d(i,j) = d(j,i), fixed distances. DTSP: cost depends on entry/exit headings (asymmetric), heading optimization coupled with sequencing. DTSP much harder, solution structure very different."
+        },
+        {
+            id: 93, category: "Dubins Vehicle", isSketch: false,
+            question: "List approach you know for solving Dubins traveling salesman problem (DTSP).",
+            answers: [
+                { text: "Decoupled (TSP then DTP), alternating optimization, sampling headings + GTSP, evolutionary algorithms, LKH adaptation, transformation to ATSP, and SOM-based methods", correct: true },
+                { text: "Convex relaxation of the heading constraints, semidefinite programming formulations, and interior point methods for continuous optimization", correct: false },
+                { text: "Deep reinforcement learning with neural network policies, attention-based transformer models, and graph neural networks for tour prediction", correct: false }
+            ],
+            explanation: "DTSP approaches: decoupled (TSP → DTP), sample headings → GTSP/ATSP, noon-bean transformation, alternating optimization, evolutionary/genetic methods, LKH with Dubins edges."
+        },
+        {
+            id: 94, category: "Dubins Vehicle", isSketch: false,
+            question: "Briefly describe how to solve Dubins traveling salesman problem (DTSP) using decoupled approach.",
+            answers: [
+                { text: "1) Solve Euclidean TSP to get visiting order, 2) Solve Dubins Touring Problem (DTP) for that order to optimize headings. Suboptimal but practical, can iterate alternating order/heading optimization", correct: true },
+                { text: "1) Compute Dubins distances for all pairs, 2) Build complete graph with these distances, 3) Find minimum spanning tree and convert to tour", correct: false },
+                { text: "1) Sample random configurations along straight-line path, 2) Optimize each segment independently, 3) Concatenate optimized segments into final tour", correct: false }
+            ],
+            explanation: "Decoupled DTSP: first solve TSP (ignoring curvature), then solve DTP for resulting order. Can iterate: fix headings → resequence → fix order → optimize headings. Converges to local optimum."
+        },
+        {
+            id: 95, category: "Dubins Vehicle", isSketch: false,
+            question: "Briefly describe the Dubins traveling salesman problem with neighborhoods (DTSPN).",
+            answers: [
+                { text: "Dubins vehicle must visit a set of regions (not points). Optimize: visiting order, where to visit in each region, and heading at each visit point. Triple optimization: sequence + positions + headings", correct: true },
+                { text: "Standard DTSP where each point has a tolerance radius within which the vehicle is considered to have visited successfully", correct: false },
+                { text: "Dubins planning problem where obstacles define forbidden neighborhoods that must be avoided with minimum clearance during flight", correct: false }
+            ],
+            explanation: "DTSPN: regions {R_i}, find tour visiting each region with Dubins vehicle. Optimizes sequence, visit positions within regions, and headings. Most complex variant - combines TSPN + DTSP."
+        },
+        {
+            id: 96, category: "Dubins Vehicle", isSketch: false,
+            question: "List approaches to the Dubins traveling salesman problem with neighborhoods (DTSPN).",
+            answers: [
+                { text: "Discretize regions + headings → GTSP, decoupled solutions, SOM adaptation for Dubins, alternating optimization of positions/headings/sequence, and evolutionary algorithms", correct: true },
+                { text: "Branch-and-bound with Lagrangian relaxation, cutting plane methods for integer programming, and column generation for large-scale instances", correct: false },
+                { text: "Model predictive control with receding horizon, real-time trajectory optimization, and feedback linearization for path tracking", correct: false }
+            ],
+            explanation: "DTSPN: sample regions × headings → GTSP, SOM with Dubins adaptation, decoupled (TSPN → DTP), alternating optimization, genetic algorithms. All heuristic due to problem complexity."
+        },
+        {
+            id: 97, category: "Dubins Vehicle", isSketch: false,
+            question: "Define formally the Dubins orienteering problem (DOP).",
+            answers: [
+                { text: "Given points with rewards and budget B, find Dubins path from start to goal maximizing reward collected while path length ≤ B. Must optimize which points to visit, their order, and headings", correct: true },
+                { text: "Find the Dubins path that covers the maximum area with the vehicle's sensor footprint within the given time budget constraint", correct: false },
+                { text: "Determine the minimum budget required to visit all points with a Dubins vehicle, providing a lower bound for fleet sizing", correct: false }
+            ],
+            explanation: "DOP: max Σr_i subject to Dubins tour length ≤ B. Selective - choose valuable subset within Dubins path budget. Combines orienteering selection with Dubins vehicle constraints."
+        },
+        {
+            id: 98, category: "Dubins Vehicle", isSketch: false,
+            question: "What are the main differences between the orienteering problem (OP) and Dubins OP (DOP)?",
+            answers: [
+                { text: "OP uses Euclidean distances, path costs are simple. DOP uses Dubins paths requiring heading optimization, costs are asymmetric and depend on approach/departure angles. DOP is significantly harder", correct: true },
+                { text: "OP is solved optimally in polynomial time, while DOP requires exponential-time algorithms due to the continuous heading space", correct: false },
+                { text: "OP assumes unlimited vehicle speed, while DOP explicitly models speed constraints through the curvature-velocity relationship", correct: false }
+            ],
+            explanation: "OP: Euclidean costs, symmetric. DOP: Dubins costs depend on headings (asymmetric), same budget may reach fewer points. DOP requires joint selection and heading optimization."
+        },
+        {
+            id: 99, category: "Dubins Vehicle", isSketch: false,
+            question: "What are the main differences between the Dubins orienteering problem (DOP) and DOP with neighborhoods (DOPN)?",
+            answers: [
+                { text: "DOP visits points, DOPN visits regions. DOPN adds flexibility of choosing where in each region to visit, can potentially reach more regions or collect same reward with shorter path", correct: true },
+                { text: "DOP collects rewards instantaneously, while DOPN requires spending time within each region proportional to the region's area", correct: false },
+                { text: "DOP uses fixed rewards per point, while DOPN has spatially varying reward density within each region that depends on visit location", correct: false }
+            ],
+            explanation: "DOP: collect rewards at exact points. DOPN: collect rewards from regions (any point inside counts). DOPN adds position optimization within regions, potentially better budget utilization."
+        },
+        {
+            id: 100, category: "Dubins Vehicle", isSketch: false,
+            question: "Define formally the Dubins orienteering problem with neighborhoods (DOPN).",
+            answers: [
+                { text: "Given reward regions R_i with rewards r_i and budget B, find Dubins path maximizing reward while length ≤ B. Optimize: which regions, visit points within regions, sequence, and headings", correct: true },
+                { text: "Given regions with time-varying rewards, find Dubins path that maximizes the time-discounted total reward collected during the mission", correct: false },
+                { text: "Given regions with stochastic rewards, find Dubins path that maximizes the expected reward while satisfying budget constraint with high probability", correct: false }
+            ],
+            explanation: "DOPN: max Σr_i for visited regions, Dubins path ≤ B. Most general single-vehicle data collection: curvature constraints + regions + budget. Quadruple optimization: selection, positions, order, headings."
+        },
+        // Q101-126: Sketching/Algorithms
+        {
+            id: 101, category: "Algorithms", isSketch: true,
+            question: "Sketch a simple grid-based path planning algorithm",
+            answers: [
+                { text: "1) Discretize space into grid, 2) Mark obstacles, 3) Initialize start, 4) Use BFS/Dijkstra/A*: expand neighbors, track costs and parents, 5) When goal reached, backtrack to get path", correct: true },
+                { text: "1) Compute potential field with goal as attractor, 2) Follow gradient descent from start, 3) Apply random perturbations when stuck in local minima", correct: false },
+                { text: "1) Build visibility graph connecting start, goal, and obstacle vertices, 2) Run shortest path on graph, 3) Smooth result with spline interpolation", correct: false }
+            ],
+            explanation: "Grid planning sketch: Create grid → mark obstacles → init open list with start → while open not empty: pop best, if goal return path, else add valid neighbors → return failure."
+        },
+        {
+            id: 102, category: "Algorithms", isSketch: true,
+            question: "Sketch any angle modification of the A* called Theta*",
+            answers: [
+                { text: "Like A*, but when expanding node n from parent p, check if line-of-sight exists to grandparent. If so, connect directly to grandparent (any angle), else normal A* parent. Produces straighter paths", correct: true },
+                { text: "Modify A* heuristic to account for angular momentum, penalizing paths that require sharp turns at high speeds based on dynamics model", correct: false },
+                { text: "Extend A* with additional state dimension for heading angle, expanding to neighbors that satisfy maximum curvature constraints", correct: false }
+            ],
+            explanation: "Theta* sketch: On expanding neighbor s': if line-of-sight(parent(s), s'), set parent(s')=parent(s) with direct cost. Else normal A* update. Results in any-angle paths, not grid-constrained."
+        },
+        {
+            id: 103, category: "Algorithms", isSketch: true,
+            question: "Sketch the D* lite algorithm and describe how it works.",
+            answers: [
+                { text: "Initialize goal with 0 cost, propagate costs backward to start. Robot follows gradient to goal. When obstacle detected: update affected edges, recompute only changed costs, continue. Incremental replanning from goal", correct: true },
+                { text: "Maintain multiple candidate paths simultaneously, switching between them based on which remains valid after map updates are received", correct: false },
+                { text: "Use predictive models to anticipate likely obstacle locations, pre-computing alternative routes before obstacles are actually detected", correct: false }
+            ],
+            explanation: "D* Lite: backward Dijkstra from goal. Maintain rhs (one-step lookahead) and g (path cost). When map changes, update affected cells, propagate inconsistencies. Much faster than replanning from scratch."
+        },
+        {
+            id: 104, category: "Algorithms", isSketch: true,
+            question: "Sketch an algorithm for frontier-based exploration with the main steps.",
+            answers: [
+                { text: "1) Build occupancy grid from sensors, 2) Detect frontiers (boundaries between known-free and unknown), 3) Cluster/filter frontiers, 4) Select best frontier (closest, largest, or utility), 5) Navigate to frontier, 6) Repeat", correct: true },
+                { text: "1) Generate random goal points in unknown regions, 2) Attempt to navigate to each goal, 3) Mark reachable areas as explored, 4) Continue until no unknown areas remain", correct: false },
+                { text: "1) Follow wall-following behavior around obstacles, 2) Mark visited cells in map, 3) Switch to opposite wall when returning to start, 4) Terminate when all cells visited", correct: false }
+            ],
+            explanation: "Frontier exploration: update map → find frontier cells (free neighbors of unknown) → group frontiers → evaluate (distance, size, information) → select best → plan path → navigate → repeat until no frontiers."
+        },
+        {
+            id: 105, category: "Algorithms", isSketch: true,
+            question: "Sketch an algorithm for incremental sampling and path searching, i.e., a single query sampling-based path planning algorithm.",
+            answers: [
+                { text: "RRT: 1) Init tree with start, 2) Sample random config, 3) Find nearest tree node, 4) Extend toward sample, 5) If valid add to tree, 6) If near goal, try connect, 7) Repeat until path found or max iterations", correct: true },
+                { text: "PRM: 1) Sample many random configurations, 2) Connect nearby samples with edges, 3) Build complete roadmap graph, 4) Query path between start and goal using graph search", correct: false },
+                { text: "Cell decomposition: 1) Divide space into convex cells, 2) Build adjacency graph, 3) Find cell sequence from start to goal, 4) Construct path through cell boundaries", correct: false }
+            ],
+            explanation: "RRT sketch: T={q_start}. Loop: q_rand=sample(), q_near=nearest(T,q_rand), q_new=extend(q_near,q_rand). If collision-free, add q_new to T. If near goal and can connect, return path."
+        },
+        {
+            id: 106, category: "Algorithms", isSketch: true,
+            question: "Sketch an algorithm for PRM (probabilistic roadmap) construction.",
+            answers: [
+                { text: "1) Sample n random configs in Cfree, 2) For each sample, find k nearest neighbors, 3) Try to connect with local planner (straight line), 4) Add edge if collision-free. Results in graph covering Cfree", correct: true },
+                { text: "1) Create regular grid of samples in configuration space, 2) Connect adjacent grid cells with edges, 3) Mark edges crossing obstacles as blocked, 4) Use remaining graph for path queries", correct: false },
+                { text: "1) Place samples along obstacle boundaries using medial axis, 2) Connect samples forming Voronoi-like roadmap, 3) Add samples in narrow passages detected by clearance analysis", correct: false }
+            ],
+            explanation: "PRM construction: V=sample n points in Cfree. For each v: find k-nearest or within radius r, attempt connection (local planner), add edge if collision-free. Query: connect start/goal to roadmap, search."
+        },
+        {
+            id: 107, category: "Algorithms", isSketch: false,
+            question: "Formulate path planning problem using the notion of configuration space.",
+            answers: [
+                { text: "Given robot with configuration space C, obstacles defining Cobs, free space Cfree = C \\ Cobs, start q_init ∈ Cfree, goal q_goal ∈ Cfree, find continuous path τ:[0,1]→Cfree with τ(0)=q_init, τ(1)=q_goal", correct: true },
+                { text: "Given workspace with obstacles, find the shortest Euclidean path from start to goal that maintains minimum clearance from all obstacle surfaces", correct: false },
+                { text: "Given robot kinematics and dynamics, find control inputs u(t) that drive the system state from initial to final configuration while respecting actuator limits", correct: false }
+            ],
+            explanation: "C-space formulation: transform robot to point, grow obstacles. Problem: find τ⊂Cfree connecting q_init to q_goal. C-space dimension = robot DOF. Enables unified treatment of complex robots."
+        },
+        {
+            id: 108, category: "Algorithms", isSketch: false,
+            question: "What is the feasible path planning and what is the optimal path planning? Define formally.",
+            answers: [
+                { text: "Feasible: find ANY valid path (collision-free, satisfies constraints). Optimal: find path minimizing cost function c(τ), i.e., τ* = argmin c(τ) over all feasible τ. Feasible is decision problem, optimal is optimization", correct: true },
+                { text: "Feasible: find path that can be executed within time limit. Optimal: find path that minimizes deviation from reference trajectory provided by higher-level planner", correct: false },
+                { text: "Feasible: find path that avoids static obstacles. Optimal: find path that also considers dynamic obstacles and predicts their future positions", correct: false }
+            ],
+            explanation: "Feasible: ∃τ? (existence). Optimal: argmin c(τ) (best). Feasible planning can stop at first solution. Optimal must prove solution is best or continue improving."
+        },
+        {
+            id: 109, category: "Algorithms", isSketch: false,
+            question: "Explain probabilistic completeness.",
+            answers: [
+                { text: "If a solution exists, P(algorithm finds it) → 1 as samples/time → ∞. Algorithm will not incorrectly report 'no path' if path exists, given enough time. RRT and PRM are probabilistically complete", correct: true },
+                { text: "Algorithm uses probabilistic collision checking that correctly identifies obstacles with probability approaching 1 as sensor measurements increase", correct: false },
+                { text: "Algorithm maintains probability distribution over possible solutions, sampling from posterior distribution to generate diverse candidate paths", correct: false }
+            ],
+            explanation: "Probabilistically complete: solution exists ⟹ P(find it) → 1 as n → ∞. Not guaranteed in finite time, but increasingly likely. Contrast with resolution complete (grid) or complete (exhaustive)."
+        },
+        {
+            id: 110, category: "Algorithms", isSketch: false,
+            question: "Explain asymptotic optimality.",
+            answers: [
+                { text: "As samples n→∞, solution cost converges to optimal cost almost surely: P(c(τ_n) → c*) = 1. Eventually finds arbitrarily close to optimal. RRT* is asymptotically optimal, basic RRT is not", correct: true },
+                { text: "Algorithm achieves the information-theoretic lower bound on computation time as problem size grows to infinity, matching hardness results", correct: false },
+                { text: "Algorithm's approximation ratio improves toward 1.0 as running time increases, eventually providing solutions within any desired tolerance", correct: false }
+            ],
+            explanation: "Asymptotically optimal: limₙ→∞ c(solution_n) = c* with probability 1. Requires proper connection radius γ(log(n)/n)^(1/d) and rewiring. Basic RRT converges to suboptimal solution."
+        },
+        {
+            id: 111, category: "Algorithms", isSketch: true,
+            question: "Sketch the Rapidly-exploring Random Tree (RRT).",
+            answers: [
+                { text: "Tree T from q_start. Loop: sample q_rand, find q_near=nearest(T), q_new=steer(q_near,q_rand,ε). If collision-free(q_near,q_new): add q_new to T with parent q_near. Return path when goal reached", correct: true },
+                { text: "Graph G with nodes and edges. Sample random configuration, connect to all nodes within radius r, update edge costs using Dijkstra, extract shortest path when goal connected", correct: false },
+                { text: "Priority queue ordered by cost-to-go estimate. Pop best node, expand successors using motion primitives, add valid successors with updated costs, terminate at goal", correct: false }
+            ],
+            explanation: "RRT: T←{q_start}. Repeat: q_rand←sample(), q_near←nearest(T,q_rand), q_new←extend(q_near,q_rand,ε). If valid: T←T∪{q_new}. Until goal reached or max iterations."
+        },
+        {
+            id: 112, category: "Algorithms", isSketch: true,
+            question: "Sketch the Rapidly-exploring Random Graph (RRG).",
+            answers: [
+                { text: "Like RRT, but connect new node to ALL neighbors within radius r(n), not just nearest. Creates graph with multiple paths. r(n) = γ·(log(n)/n)^(1/d) for asymptotic optimality", correct: true },
+                { text: "Grow two trees simultaneously from start and goal, attempting to merge them when nodes come within connection distance of each other", correct: false },
+                { text: "Maintain forest of multiple trees rooted at different configurations, merging trees when edges between them become collision-free", correct: false }
+            ],
+            explanation: "RRG: add node like RRT. Then for all nodes within radius r(n)=γ(log(n)/n)^(1/d), add edge if collision-free. Results in graph (multiple paths), asymptotically optimal, more edges than RRT*."
+        },
+        {
+            id: 113, category: "Algorithms", isSketch: false,
+            question: "Describe ideas of the Informed RRT* and Regionally Accelerated BIT* (RABIT*).",
+            answers: [
+                { text: "Informed RRT*: after finding initial solution, sample only in ellipse containing potentially better paths. RABIT*: regional graph, lazy evaluation, batch processing. Both focus computation on promising regions", correct: true },
+                { text: "Informed RRT* uses machine learning to predict which samples will lead to better paths. RABIT* maintains uncertainty estimates to guide exploration-exploitation tradeoff", correct: false },
+                { text: "Informed RRT* parallelizes tree growth across multiple CPU cores. RABIT* distributes computation across networked machines for large-scale planning", correct: false }
+            ],
+            explanation: "Informed RRT*: prolate hyperspheroid sampling after first solution (c_best). RABIT*: regional roadmaps, lazy collision checking, batch informed trees. Focus samples where improvement possible."
+        },
+        {
+            id: 114, category: "Algorithms", isSketch: false,
+            question: "Define formally the Multi-Goal Motion Planning Problem",
+            answers: [
+                { text: "Given robot, C, Cfree, goal set G={g1,...,gn}, find admissible multi-goal path visiting all goals. Admissible: paths between goals are collision-free and satisfy robot constraints. Optimize total path cost", correct: true },
+                { text: "Given multiple robots and single goal, coordinate paths for all robots to reach the goal while avoiding inter-robot collisions and deadlocks", correct: false },
+                { text: "Given robot and goal with uncertainty, find policy mapping observations to actions that reaches goal with maximum probability despite localization errors", correct: false }
+            ],
+            explanation: "MGMP: workspace W, robot A, C-space C, Cfree, goals G⊂Cfree. Find sequence and connecting paths. Admissible: each segment ∈ Cfree. Often minimize total length or time."
+        },
+        {
+            id: 115, category: "Algorithms", isSketch: true,
+            question: "Sketch self-organizing map (SOM) based approach for the traveling salesman problem (TSP).",
+            answers: [
+                { text: "Ring of m neurons (m>n cities). Present random city, find winner (nearest neuron), update winner and neighbors toward city. Reduce neighborhood over time. Ring converges to tour through all cities", correct: true },
+                { text: "Grid of neurons mapping 2D city positions to tour order. Train with backpropagation using optimal tours as supervision. Query by feeding city coordinates through network", correct: false },
+                { text: "Hopfield network with energy function encoding tour constraints. Initialize randomly, iterate until convergence to low-energy state representing valid tour", correct: false }
+            ],
+            explanation: "SOM-TSP: initialize ring of neurons. Repeat: pick random city, find BMU (nearest neuron), move BMU and neighbors toward city. Decrease learning rate and neighborhood. Ring adapts to tour visiting all cities."
+        },
+        {
+            id: 116, category: "Algorithms", isSketch: false,
+            question: "Define formally the data collection planning as the prize-collecting traveling salesman problem with neighborhoods (PC-TSPN)",
+            answers: [
+                { text: "Visit subset of regions collecting prizes, pay penalty for unvisited. Minimize: tour length + penalties for skipped regions. Balances coverage vs travel cost. Regions not points (TSPN variant)", correct: true },
+                { text: "Visit all regions while collecting data samples, maximize information gain subject to battery constraints representing the collection budget", correct: false },
+                { text: "Visit regions with uncertain rewards, use multi-armed bandit approach to balance exploration of unknown regions with exploitation of high-reward areas", correct: false }
+            ],
+            explanation: "PC-TSPN: regions with prizes/penalties. Objective: min (tour cost + Σ penalties for unvisited). Trade-off: expensive-to-reach regions may be skipped if penalty < travel cost. Budget-free variant of orienteering."
+        },
+        {
+            id: 117, category: "Algorithms", isSketch: true,
+            question: "Sketch the Christofides's algorithm for the traveling salesman problem (TSP) and show its approximation factor.",
+            answers: [
+                { text: "1) Compute MST, 2) Find odd-degree vertices, 3) Compute minimum matching on odd vertices, 4) Combine MST+matching (Eulerian), 5) Find Euler tour, 6) Shortcut repeated vertices. Approximation: 1.5 for metric TSP", correct: true },
+                { text: "1) Find convex hull of cities, 2) Insert remaining cities using cheapest insertion, 3) Apply 2-opt local search, 4) Repeat until no improvement. Approximation: 2.0 for all instances", correct: false },
+                { text: "1) Compute Delaunay triangulation, 2) Extract spanning subgraph, 3) Find Hamiltonian path in subgraph, 4) Convert to tour. Approximation: 1.25 for planar instances", correct: false }
+            ],
+            explanation: "Christofides: MST (≤OPT) + min matching on odd-degree (≤OPT/2) = Eulerian multigraph. Euler tour + shortcutting ≤ 1.5·OPT. Best known polynomial approximation for metric TSP."
+        },
+        {
+            id: 118, category: "Algorithms", isSketch: false,
+            question: "Describe Noon-Bean transformation of the generalized traveling salesman problem (GTSP) to the asymmetric traveling salesman problem (ATSP).",
+            answers: [
+                { text: "Add zero-cost directed cycle within each cluster. Set inter-cluster edges appropriately. Optimal ATSP tour uses exactly one inter-cluster edge per cluster, giving GTSP solution. Allows using ATSP solvers for GTSP", correct: true },
+                { text: "Create auxiliary graph with one node per cluster, edge weights equal to minimum distance between any two nodes in respective clusters, solve TSP on auxiliary graph", correct: false },
+                { text: "Enumerate all combinations of representative nodes from clusters, solve TSP for each combination, return best solution found across all enumerations", correct: false }
+            ],
+            explanation: "Noon-Bean: intra-cluster edges form directed cycle (cost 0 or -M). Inter-cluster edges modified. ATSP solution enters/exits each cluster once via inter-cluster edges. Extract these for GTSP solution."
+        },
+        {
+            id: 119, category: "Algorithms", isSketch: false,
+            question: "Define formally the orienteering problem and orienteering problem with neighborhoods.",
+            answers: [
+                { text: "OP: max Σr_i for visited points, subject to path length ≤ B. OPN: same but visit regions instead of points - touching anywhere in region R_i collects reward r_i. Both select valuable subset within budget", correct: true },
+                { text: "OP: find path visiting all points in minimum time. OPN: find path covering all regions with minimum number of waypoints while respecting dynamics constraints", correct: false },
+                { text: "OP: maximize distance covered within time budget. OPN: maximize area scanned by sensor footprint during the limited-duration mission", correct: false }
+            ],
+            explanation: "OP: budget B, points with rewards, max reward subject to tour ≤ B. OPN: regions with rewards, visit anywhere in region. Both: selective coverage under travel budget constraint."
+        },
+        {
+            id: 120, category: "Algorithms", isSketch: false,
+            question: "Define the Dubins touring problem and sketch its solution.",
+            answers: [
+                { text: "DTP: ordered points, find min-length Dubins tour respecting order. Solution: discretize headings (k angles per point), build layered graph (layer=point, nodes=headings), edges=Dubins costs, find shortest path through layers", correct: true },
+                { text: "DTP: arbitrary point order, find globally optimal sequence and headings simultaneously using mixed-integer programming with big-M constraints for ordering", correct: false },
+                { text: "DTP: continuous heading optimization using calculus of variations, derive necessary conditions, solve two-point boundary value problem for each segment", correct: false }
+            ],
+            explanation: "DTP: sequence fixed, optimize headings. Discretize: k headings per point. Graph: node (i,θ) = point i with heading θ. Edge = Dubins(p_i,θ_j → p_{i+1},θ_k). Shortest path = optimal headings."
+        },
+        {
+            id: 121, category: "Algorithms", isSketch: false,
+            question: "Define the Dubins traveling salesman problem with neighborhoods and sketch its possible solution.",
+            answers: [
+                { text: "DTSPN: visit regions with Dubins vehicle. Solution: sample positions and headings in each region, create GTSP (nodes = samples), solve GTSP to get sequence, refine positions/headings locally", correct: true },
+                { text: "DTSPN requires visiting exact center points of each region using a holonomic vehicle model. Solution: compute centroids, apply standard TSP solver to find optimal sequence, then execute straight-line paths between centers", correct: false },
+                { text: "DTSPN is solved by computing the convex hull of all regions first, then finding the shortest Hamiltonian path around the hull boundary while ignoring interior regions until final optimization phase", correct: false }
+            ],
+            explanation: "DTSPN: regions + Dubins. Approach: sample (position, heading) pairs in regions → GTSP (one sample per region in solution) → local optimization of visit points and headings."
+        },
+        {
+            id: 122, category: "Algorithms", isSketch: false,
+            question: "What extensions of the data collection planning with Dubins vehicle to 3D do you know?",
+            answers: [
+                { text: "Dubins airplane (adds altitude/climb constraints), 3D Dubins paths with pitch limits, fixed-wing UAV planning with glide constraints, and underwater vehicle variants", correct: true },
+                { text: "The primary 3D extension uses spherical Dubins paths where the vehicle maintains constant speed on a sphere surface, with paths composed of great circle arcs connected by helical turns at fixed radius", correct: false },
+                { text: "3D extensions replace curvature constraints with acceleration limits, allowing the vehicle to turn instantaneously but limiting how quickly it can change velocity magnitude in any direction", correct: false }
+            ],
+            explanation: "3D extensions: Dubins airplane (bounded curvature + bounded pitch), 3D Dubins paths, fixed-wing UAV with climb/glide rates. Similar structure but more complex path types and constraints."
+        },
+        // Q123-132: System Design
+        {
+            id: 123, category: "System Design", isSketch: false,
+            question: "What is the cop number of a 4-connected grid? Why?",
+            answers: [
+                { text: "Cop number is 2. One cop cannot guarantee capture on a grid (evader can always escape via alternative paths). Two cops can corner evader by coordinated movement on orthogonal axes", correct: true },
+                { text: "Cop number is 1 because the grid structure ensures a single cop using optimal diagonal movement can always reduce Manhattan distance to the evader until capture is guaranteed", correct: false },
+                { text: "Cop number is 4 because the evader can escape in any of the four cardinal directions, requiring one dedicated cop to block each potential escape route simultaneously", correct: false }
+            ],
+            explanation: "Cop number of 4-connected grid is 2. Single cop: evader maintains distance. Two cops: coordinate to trap, e.g., one pursues horizontally, other vertically. Reduces evader's escape options until capture."
+        },
+        {
+            id: 124, category: "System Design", isSketch: false,
+            question: "How would you design an algorithm finding an evader hiding in a building?",
+            answers: [
+                { text: "Graph-based pursuit: model building as graph, compute cleared/contaminated regions, move searchers to maintain cleared area while expanding. Use frontier-based search ensuring no re-contamination. Multiple searchers may be needed", correct: true },
+                { text: "Compute the building's visibility graph and position a single searcher at the vertex with maximum visibility coverage. The searcher remains stationary while rotating to scan all areas within line of sight", correct: false },
+                { text: "Use probabilistic roadmap sampling throughout the building interior, then have searchers visit samples in nearest-neighbor order while the evader's position is estimated using Kalman filtering", correct: false }
+            ],
+            explanation: "Building search: decompose into regions, track clear/contaminated status. Searchers clear rooms while preventing re-contamination (evader sneaking back). Schedule to minimize searchers while guaranteeing coverage."
+        },
+        {
+            id: 125, category: "System Design", isSketch: false,
+            question: "How would you design a camera system to protect a supermarket from thieves?",
+            answers: [
+                { text: "Art gallery problem variant: compute minimum cameras covering all space, place at vertices/edges of visibility polygon decomposition. Use optimization or greedy placement. Consider blind spots, overlapping coverage for redundancy", correct: true },
+                { text: "Apply Voronoi decomposition to the floor plan with cameras placed at Voronoi vertices. This guarantees each point is equidistant from multiple cameras, providing uniform coverage probability across all regions", correct: false },
+                { text: "Use motion prediction algorithms to identify high-traffic pathways, then place cameras only along these predicted routes since thieves must traverse main corridors to reach exit points", correct: false }
+            ],
+            explanation: "Coverage problem: model as polygon, compute visibility. Art gallery theorem: ⌊n/3⌋ cameras suffice for n-vertex polygon. Practical: optimize coverage, minimize blind spots, consider camera FOV, handle obstacles."
+        },
+        {
+            id: 126, category: "System Design", isSketch: false,
+            question: "How would you design a system for supporting police units in chasing a fleeing bank robber?",
+            answers: [
+                { text: "Multi-agent pursuit-evasion: predict robber paths using road network, coordinate units to cut off escape routes. Use Voronoi partitioning for coverage, dynamic task allocation as situation evolves. Consider probabilistic evader model", correct: true },
+                { text: "Apply shortest-path algorithms to compute the minimum-time route from each unit to the robber's current location, then dispatch all units along their respective shortest paths simultaneously", correct: false },
+                { text: "Model the pursuit as a potential field where the robber is a repulsive charge and police units are attractive charges, allowing units to follow gradient descent toward natural convergence points", correct: false }
+            ],
+            explanation: "Pursuit system: road network model, evader motion prediction, interceptor positioning. Coordinate to minimize capture time, cut off escape routes. Dynamic replanning as evader moves. Consider visibility, communication."
+        },
+        {
+            id: 127, category: "System Design", isSketch: false,
+            question: "How would you design a system for patrolling a perimeter with heterogeneous robots?",
+            answers: [
+                { text: "Assign perimeter segments based on robot capabilities (speed, sensor range). Fast robots cover more, slow robots patrol shorter segments. Optimize coverage frequency (minimize max time between visits). Partition perimeter by capability ratios", correct: true },
+                { text: "Have all robots start from the same point and traverse the entire perimeter together in formation, with faster robots reducing speed to match the slowest unit for coordinated movement", correct: false },
+                { text: "Assign the fastest robot to patrol continuously while slower robots remain stationary at fixed observation posts, using their sensors to monitor their immediate vicinity only", correct: false }
+            ],
+            explanation: "Heterogeneous patrol: partition perimeter proportional to robot speeds/capabilities. Each robot patrols its segment repeatedly. Optimize for worst-case patrol time (idleness). Handle failures, dynamic reassignment."
+        },
+        {
+            id: 128, category: "System Design", isSketch: false,
+            question: "How would you design a system for patrolling area using multiple resources?",
+            answers: [
+                { text: "Decompose area into cells/regions, assign to robots considering coverage overlap, travel time, importance weighting. Use multi-robot task allocation (auctions, Hungarian). Balance patrol frequency across area. Handle dynamic events", correct: true },
+                { text: "Concentrate all robots at the geometric centroid of the area and have them perform synchronized radial sweeps outward, returning to center after each sweep cycle completes", correct: false },
+                { text: "Use random waypoint selection for each robot independently, relying on probabilistic coverage guarantees to eventually visit all areas with sufficient frequency over time", correct: false }
+            ],
+            explanation: "Area patrol: partition or share areas, optimize patrol frequency (minimize max idleness), handle priority zones, coordinate to avoid redundancy. Methods: graph patrol, auction-based allocation, cyclic strategies."
+        }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let answered = new Array(questions.length).fill(false);
+    let userAnswers = new Array(questions.length).fill(null);
+    let wrongAnswers = [];
+
+    // Timer state
+    let questionStartTime = null;
+    let questionTimes = new Array(questions.length).fill(null);
+    let timerInterval = null;
+
+    const categoryColors = {
+        "Robot Basics": "bg-blue-100 text-blue-700",
+        "Robotic Paradigms": "bg-purple-100 text-purple-700",
+        "Path Planning": "bg-green-100 text-green-700",
+        "Exploration": "bg-yellow-100 text-yellow-700",
+        "Sampling-based": "bg-orange-100 text-orange-700",
+        "Multi-Goal Planning": "bg-pink-100 text-pink-700",
+        "Dubins Vehicle": "bg-red-100 text-red-700",
+        "Algorithms": "bg-indigo-100 text-indigo-700",
+        "System Design": "bg-teal-100 text-teal-700"
+    };
+
+    function shuffleAnswers(answers) {
+        const shuffled = [...answers];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        questionStartTime = Date.now();
+        updateTimerDisplay();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        if (questionStartTime) {
+            questionTimes[currentQuestion] = Math.floor((Date.now() - questionStartTime) / 1000);
+            questionStartTime = null;
+        }
+    }
+
+    function updateTimerDisplay() {
+        const display = document.getElementById('timer-display');
+        if (answered[currentQuestion] && questionTimes[currentQuestion] !== null) {
+            display.textContent = formatTime(questionTimes[currentQuestion]);
+            display.classList.remove('text-gray-600', 'bg-gray-100');
+            display.classList.add('text-green-700', 'bg-green-100');
+        } else if (questionStartTime) {
+            const elapsed = Math.floor((Date.now() - questionStartTime) / 1000);
+            display.textContent = formatTime(elapsed);
+            display.classList.remove('text-green-700', 'bg-green-100');
+            display.classList.add('text-gray-600', 'bg-gray-100');
+        } else {
+            display.textContent = '0:00';
+            display.classList.remove('text-green-700', 'bg-green-100');
+            display.classList.add('text-gray-600', 'bg-gray-100');
+        }
+    }
+
+    function renderQuestion() {
+        const q = questions[currentQuestion];
+        const container = document.getElementById('question-container');
+        const shuffledAnswers = answered[currentQuestion] ? q.answers : shuffleAnswers(q.answers);
+
+        if (!answered[currentQuestion]) {
+            q._shuffled = shuffledAnswers;
+        }
+        const displayAnswers = answered[currentQuestion] ? q._shuffled : shuffledAnswers;
+        if (!answered[currentQuestion]) q._shuffled = displayAnswers;
+
+        container.innerHTML = `
+            <div class="flex items-center gap-3 mb-4">
+                <span class="category-badge ${categoryColors[q.category] || 'bg-gray-100 text-gray-700'}">${q.category}</span>
+                ${q.isSketch ? '<span class="category-badge bg-amber-100 text-amber-700">Sketch</span>' : ''}
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 mb-6">
+                <span class="text-blue-600">Q${q.id}.</span> ${q.question}
+            </h2>
+            <div id="answers-container">
+                ${displayAnswers.map((a, i) => `
+                    <button class="answer-btn ${answered[currentQuestion] ? 'answered' : ''} ${
+                        answered[currentQuestion] ? (a.correct ? 'correct' : (userAnswers[currentQuestion] === i ? 'wrong' : '')) : ''
+                    }" onclick="selectAnswer(${i}, ${a.correct})" ${answered[currentQuestion] ? 'disabled' : ''}>
+                        <span class="font-bold text-gray-500 mr-3">${String.fromCharCode(65 + i)}.</span>
+                        ${a.text}
+                    </button>
+                `).join('')}
+            </div>
+            ${answered[currentQuestion] ? `
+                <div class="explanation-box">
+                    <div class="font-semibold text-blue-800 mb-1">${userAnswers[currentQuestion] !== null && displayAnswers[userAnswers[currentQuestion]].correct ? '✓ Correct!' : '✗ Incorrect'}</div>
+                    <div class="text-gray-700 text-sm">${q.explanation}</div>
+                </div>
+            ` : ''}
+        `;
+
+        document.getElementById('progress-text').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+        document.getElementById('progress-fill').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+        document.getElementById('jump-input').value = currentQuestion + 1;
+        document.getElementById('prev-btn').disabled = currentQuestion === 0;
+        document.getElementById('next-btn').classList.toggle('hidden', !answered[currentQuestion]);
+        document.getElementById('score-display').textContent = `Score: ${score}/${questions.length}`;
+
+        // Handle timer
+        if (!answered[currentQuestion]) {
+            startTimer();
+        } else {
+            if (timerInterval) clearInterval(timerInterval);
+            updateTimerDisplay();
+        }
+    }
+
+    function selectAnswer(index, isCorrect) {
+        if (answered[currentQuestion]) return;
+
+        stopTimer();
+        answered[currentQuestion] = true;
+        userAnswers[currentQuestion] = index;
+
+        if (isCorrect) {
+            score++;
+        } else {
+            wrongAnswers.push(currentQuestion);
+        }
+
+        renderQuestion();
+
+        if (answered.every(a => a)) {
+            setTimeout(showResults, 500);
+        }
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < questions.length - 1) {
+            currentQuestion++;
+            renderQuestion();
+        } else if (answered.every(a => a)) {
+            showResults();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+            renderQuestion();
+        }
+    }
+
+    function jumpToQuestion(num) {
+        const n = parseInt(num);
+        if (n >= 1 && n <= questions.length) {
+            currentQuestion = n - 1;
+            renderQuestion();
+        }
+    }
+
+    function showResults() {
+        if (timerInterval) clearInterval(timerInterval);
+        document.getElementById('question-container').classList.add('hidden');
+        document.getElementById('results-container').classList.remove('hidden');
+        document.querySelector('.max-w-3xl.mt-4').classList.add('hidden');
+
+        const percentage = Math.round((score / questions.length) * 100);
+        document.getElementById('final-score').textContent = `${percentage}%`;
+        document.getElementById('score-detail').textContent = `${score} correct out of ${questions.length}`;
+
+        const categories = {};
+        questions.forEach((q, i) => {
+            if (!categories[q.category]) categories[q.category] = { correct: 0, total: 0 };
+            categories[q.category].total++;
+            if (userAnswers[i] !== null && q._shuffled && q._shuffled[userAnswers[i]].correct) {
+                categories[q.category].correct++;
+            }
+        });
+
+        document.getElementById('category-breakdown').innerHTML = `
+            <h3 class="font-bold text-gray-700 mb-3">Category Breakdown:</h3>
+            ${Object.entries(categories).map(([cat, data]) => `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm text-gray-600">${cat}</span>
+                    <span class="text-sm font-semibold ${data.correct/data.total >= 0.7 ? 'text-green-600' : data.correct/data.total >= 0.5 ? 'text-yellow-600' : 'text-red-600'}">
+                        ${data.correct}/${data.total}
+                    </span>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    function restartQuiz() {
+        currentQuestion = 0;
+        score = 0;
+        answered = new Array(questions.length).fill(false);
+        userAnswers = new Array(questions.length).fill(null);
+        wrongAnswers = [];
+        questions.forEach(q => delete q._shuffled);
+
+        // Reset timer state
+        if (timerInterval) clearInterval(timerInterval);
+        questionStartTime = null;
+        questionTimes = new Array(questions.length).fill(null);
+
+        document.getElementById('question-container').classList.remove('hidden');
+        document.getElementById('results-container').classList.add('hidden');
+        document.querySelector('.max-w-3xl.mt-4').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function reviewWrong() {
+        if (wrongAnswers.length > 0) {
+            currentQuestion = wrongAnswers[0];
+            document.getElementById('question-container').classList.remove('hidden');
+            document.getElementById('results-container').classList.add('hidden');
+            document.querySelector('.max-w-3xl.mt-4').classList.remove('hidden');
+            renderQuestion();
+        }
+    }
+
+    // ============== BROWSE VIEW ==============
+    let currentView = 'quiz';
+    let browseRendered = false;
+    let searchHighlightIndex = -1;
+    let searchResults = [];
+
+    function switchView(view) {
+        currentView = view;
+
+        // Update tabs
+        document.getElementById('tab-quiz').classList.toggle('active', view === 'quiz');
+        document.getElementById('tab-browse').classList.toggle('active', view === 'browse');
+
+        // Show/hide views
+        document.getElementById('quiz-view').classList.toggle('hidden', view !== 'quiz');
+        document.getElementById('browse-view').classList.toggle('hidden', view !== 'browse');
+
+        // Show/hide quiz-specific nav elements
+        document.getElementById('score-display').classList.toggle('hidden', view !== 'quiz');
+        document.getElementById('restart-btn').classList.toggle('hidden', view !== 'quiz');
+
+        // Render browse view on first switch
+        if (view === 'browse' && !browseRendered) {
+            renderBrowseView();
+            browseRendered = true;
+        }
+
+        // Stop timer when switching away from quiz
+        if (view !== 'quiz' && timerInterval) {
+            clearInterval(timerInterval);
+        }
+    }
+
+    function renderBrowseView() {
+        const container = document.getElementById('browse-questions-list');
+
+        let html = '';
+        questions.forEach(q => {
+            const correctAnswer = q.answers.find(a => a.correct);
+            const categoryClass = categoryColors[q.category] || 'bg-gray-100 text-gray-700';
+
+            html += `
+                <div class="browse-question" id="browse-q-${q.id}">
+                    <div class="browse-question-header">
+                        <span class="browse-question-id">Q${q.id}</span>
+                        <span class="category-badge ${categoryClass}">${q.category}</span>
+                        ${q.isSketch ? '<span class="category-badge bg-amber-100 text-amber-700">Sketch</span>' : ''}
+                    </div>
+                    <div class="browse-question-text">${q.question}</div>
+                    <div class="browse-answer">${correctAnswer ? correctAnswer.text : 'No correct answer found'}</div>
+                    ${q.explanation ? `<div class="browse-explanation">${q.explanation}</div>` : ''}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ============== SEARCH FUNCTIONALITY ==============
+    const searchInput = document.getElementById('search-input');
+    const searchDropdown = document.getElementById('search-dropdown');
+
+    function normalizeText(text) {
+        return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function searchQuestions(query) {
+        if (!query || query.length < 2) return [];
+
+        const normalizedQuery = normalizeText(query);
+        const words = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
+
+        return questions
+            .map(q => {
+                const searchText = normalizeText(`Q${q.id} ${q.question} ${q.category}`);
+
+                // Calculate match score
+                let score = 0;
+                let allWordsMatch = true;
+
+                for (const word of words) {
+                    if (searchText.includes(word)) {
+                        score += word.length;
+                        // Bonus for matching question number
+                        if (normalizeText(`Q${q.id}`).includes(word) || normalizeText(`${q.id}`).includes(word)) {
+                            score += 10;
+                        }
+                        // Bonus for matching at start of question
+                        if (normalizeText(q.question).startsWith(word)) {
+                            score += 5;
+                        }
+                    } else {
+                        allWordsMatch = false;
+                    }
+                }
+
+                return { question: q, score, allWordsMatch };
+            })
+            .filter(r => r.score > 0 && r.allWordsMatch)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10)
+            .map(r => r.question);
+    }
+
+    function renderSearchDropdown(results) {
+        searchResults = results;
+        searchHighlightIndex = -1;
+
+        if (results.length === 0) {
+            searchDropdown.classList.remove('active');
+            return;
+        }
+
+        let html = '';
+        results.forEach((q, i) => {
+            const truncatedQuestion = q.question.length > 80 ? q.question.substring(0, 80) + '...' : q.question;
+            html += `
+                <div class="search-item" data-index="${i}" onclick="selectSearchResult(${q.id})">
+                    <div>
+                        <span class="search-item-id">Q${q.id}</span>
+                        <span class="search-item-text">${truncatedQuestion}</span>
+                    </div>
+                    <div class="search-item-category">${q.category}</div>
+                </div>
+            `;
+        });
+
+        searchDropdown.innerHTML = html;
+        searchDropdown.classList.add('active');
+    }
+
+    function selectSearchResult(questionId) {
+        const element = document.getElementById(`browse-q-${questionId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'auto', block: 'start' });
+            // Highlight briefly
+            element.style.transition = 'box-shadow 0.3s';
+            element.style.boxShadow = '0 0 0 3px #3b82f6';
+            setTimeout(() => {
+                element.style.boxShadow = '';
+            }, 2000);
+        }
+
+        // Clear search
+        searchInput.value = '';
+        searchDropdown.classList.remove('active');
+    }
+
+    function updateHighlight(newIndex) {
+        const items = searchDropdown.querySelectorAll('.search-item');
+        items.forEach((item, i) => {
+            item.classList.toggle('highlighted', i === newIndex);
+        });
+        searchHighlightIndex = newIndex;
+
+        // Scroll highlighted item into view
+        if (newIndex >= 0 && items[newIndex]) {
+            items[newIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const results = searchQuestions(e.target.value);
+        renderSearchDropdown(results);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (!searchDropdown.classList.contains('active')) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const newIndex = Math.min(searchHighlightIndex + 1, searchResults.length - 1);
+            updateHighlight(newIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const newIndex = Math.max(searchHighlightIndex - 1, 0);
+            updateHighlight(newIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (searchHighlightIndex >= 0 && searchResults[searchHighlightIndex]) {
+                selectSearchResult(searchResults[searchHighlightIndex].id);
+            } else if (searchResults.length > 0) {
+                selectSearchResult(searchResults[0].id);
+            }
+        } else if (e.key === 'Escape') {
+            searchDropdown.classList.remove('active');
+        }
+    });
+
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.length >= 2) {
+            const results = searchQuestions(searchInput.value);
+            renderSearchDropdown(results);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-box')) {
+            searchDropdown.classList.remove('active');
+        }
+    });
+
+    // Initialize
+    renderQuestion();
+    </script>
+</body>
+</html>
