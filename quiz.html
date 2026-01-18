@@ -13,11 +13,13 @@
         }
         .nav-bar {
             background-color: #1f2937;
-            height: 50px;
+            min-height: 50px;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            padding: 8px 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .question-card {
             background: white;
@@ -251,29 +253,42 @@
                 font-size: 16px; /* Prevents zoom on iOS */
             }
             .nav-bar {
-                padding: 0 12px;
+                padding: 6px 10px;
+                gap: 6px;
             }
             .nav-tabs {
-                gap: 0.5rem;
+                gap: 4px;
+                order: 2;
             }
             .nav-tab {
-                padding: 0.4rem 0.75rem;
-                font-size: 0.8rem;
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+            .nav-right {
+                order: 3;
+                margin-left: auto;
+            }
+            .nav-right .text-sm {
+                font-size: 0.7rem;
+            }
+            .nav-right button {
+                padding: 4px 8px;
+                font-size: 0.7rem;
             }
         }
     </style>
 </head>
 <body>
     <nav class="nav-bar">
-        <a href="index.html" class="text-gray-400 hover:text-white mr-3 flex items-center" title="Home">
+        <a href="index.html" class="text-gray-400 hover:text-white flex items-center flex-shrink-0" title="Home">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         </a>
-        <div class="text-white font-bold text-lg hidden sm:block">UIR Quiz</div>
-        <div class="nav-tabs flex gap-2 sm:ml-6">
+        <div class="text-white font-bold hidden sm:block">UIR Quiz</div>
+        <div class="nav-tabs flex gap-2">
             <button onclick="switchView('quiz')" id="tab-quiz" class="nav-tab active">Quiz</button>
-            <button onclick="switchView('browse')" id="tab-browse" class="nav-tab">Browse All</button>
+            <button onclick="switchView('browse')" id="tab-browse" class="nav-tab">Browse</button>
         </div>
-        <div class="ml-auto flex items-center gap-4">
+        <div class="nav-right ml-auto flex items-center gap-2 sm:gap-4">
             <span id="score-display" class="text-gray-300 text-sm">Score: 0/128</span>
             <button onclick="restartQuiz()" id="restart-btn" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded">Restart</button>
         </div>
