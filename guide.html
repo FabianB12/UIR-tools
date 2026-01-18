@@ -277,6 +277,107 @@
             color: #92400e;
             margin-top: 8px;
         }
+
+        /* ========== MOBILE RESPONSIVE STYLES ========== */
+        @media (max-width: 1100px) {
+            .left-sidebar { display: none; }
+            .view-section { gap: 16px; }
+        }
+
+        @media (max-width: 900px) {
+            body { overflow: auto; height: auto; min-height: 100vh; }
+
+            .main-container {
+                flex-direction: column;
+                padding: 12px;
+                overflow: visible;
+                align-items: center;
+            }
+
+            .view-section {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                height: auto;
+            }
+
+            .canvas-wrapper {
+                width: 100%;
+                max-width: 500px;
+            }
+
+            .canvas-wrapper canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-width: 500px;
+                max-height: none;
+            }
+
+            .left-sidebar {
+                display: none;
+            }
+
+            .controls-bar {
+                padding: 12px 8px;
+                gap: 8px;
+            }
+
+            .controls-bar button {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .controls-bar input[type="range"] {
+                width: 80px;
+            }
+        }
+
+        @media (max-width: 540px) {
+            .main-container {
+                padding: 8px;
+            }
+
+            .sidebar {
+                border-radius: 6px;
+            }
+
+            .sidebar-content {
+                padding: 12px;
+            }
+
+            .tab-btn {
+                padding: 10px 8px;
+                font-size: 0.8rem;
+            }
+
+            .step-item {
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }
+
+            .controls-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .controls-bar > div {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+            }
+
+            #controls-RRT-SPECIFIC,
+            #controls-TSP-SPECIFIC,
+            #controls-GRID-SPECIFIC,
+            #controls-EXPLORE-SPECIFIC {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
