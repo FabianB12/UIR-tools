@@ -5016,6 +5016,26 @@
         exploreState.targetFrontier = best;
     }
 
+    // Check if a cell is passable (free or safe unknown)
+    function isCellPassable(x, y) {
+        if(x <= 0 || x >= EXPLORE_DIM-1 || y <= 0 || y >= EXPLORE_DIM-1) return false;
+        if(isObstacle(x, y)) return false;
+        if(exploreState.grid[y][x] === 2) return false; // Known obstacle
+        return true;
+    }
+
+    // Check if diagonal move is valid (no corner clipping)
+    function canMoveDiagonal(fromX, fromY, dx, dy) {
+        // For diagonal moves, check both orthogonal neighbors
+        if(dx !== 0 && dy !== 0) {
+            // Check horizontal neighbor
+            if(!isCellPassable(fromX + dx, fromY)) return false;
+            // Check vertical neighbor
+            if(!isCellPassable(fromX, fromY + dy)) return false;
+        }
+        return true;
+    }
+
     // BFS pathfinding to find path to target
     function findPathBFS(startX, startY, targetX, targetY) {
         const directions = [
@@ -5047,8 +5067,10 @@
                 const key = `${nx},${ny}`;
 
                 if(visited.has(key)) continue;
-                if(nx <= 0 || nx >= EXPLORE_DIM-1 || ny <= 0 || ny >= EXPLORE_DIM-1) continue;
-                if(isObstacle(nx, ny) || exploreState.grid[ny][nx] === 2) continue;
+                if(!isCellPassable(nx, ny)) continue;
+
+                // Check diagonal corner clipping
+                if(!canMoveDiagonal(current.x, current.y, dir.dx, dir.dy)) continue;
 
                 const cellValue = exploreState.grid[ny][nx];
 
@@ -5128,8 +5150,8 @@
                 for(let dir of shuffled) {
                     const nx = rx + dir.dx;
                     const ny = ry + dir.dy;
-                    if(nx > 0 && nx < EXPLORE_DIM-1 && ny > 0 && ny < EXPLORE_DIM-1) {
-                        if(!isObstacle(nx, ny) && exploreState.grid[ny][nx] === 1) {
+                    if(isCellPassable(nx, ny) && canMoveDiagonal(rx, ry, dir.dx, dir.dy)) {
+                        if(exploreState.grid[ny][nx] === 1) {
                             exploreState.robot.x = nx;
                             exploreState.robot.y = ny;
                             break;
