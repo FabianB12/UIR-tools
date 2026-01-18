@@ -20,6 +20,8 @@
             color: white;
             padding: 0 12px;
             height: 50px;
+            min-height: 50px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -73,15 +75,15 @@
             display: flex;
             flex-direction: row;
             justify-content: center;
-            align-items: flex-start;
+            align-items: stretch;
             padding: 20px;
             gap: 16px;
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
         }
 
         /* Views */
-        .view-section { display: none; width: auto; flex-direction: row; justify-content: center; align-items: flex-start; gap: 16px;}
+        .view-section { display: none; width: auto; height: 100%; flex-direction: row; justify-content: center; align-items: stretch; gap: 16px;}
         .view-section.active { display: flex; }
 
         /* Canvas */
@@ -93,13 +95,13 @@
             flex-shrink: 0;
             background: white;
             height: 500px;
+            align-self: center;
         }
         canvas { display: block; cursor: crosshair; }
 
         /* Sidebar (right) */
         .sidebar {
             width: 300px;
-            height: 500px;
             background: white;
             padding: 0;
             border-radius: 8px;
@@ -179,6 +181,7 @@
             align-items: center;
             flex-wrap: wrap;
             z-index: 20;
+            flex-shrink: 0;
         }
         
         /* Inputs */
@@ -189,7 +192,6 @@
         /* Left Explanation Sidebar */
         .left-sidebar {
             width: 280px;
-            height: 500px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
