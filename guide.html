@@ -1715,7 +1715,10 @@
         stopAuto();
 
         // Initial Draw/Reset for that view
-        if(view === VIEWS.SAMPLING) drawRrtScene();
+        if(view === VIEWS.SAMPLING) {
+            if(rrtState.nodes.length === 0) resetRrt();
+            else drawRrtScene();
+        }
         else if(view === VIEWS.TSP) {
             if(tspState.targets.length === 0) randomizeTspMap();
             drawTspScene();
