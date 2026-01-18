@@ -4893,9 +4893,13 @@
         let ry = exploreState.robot.y;
         let range = exploreState.sensorRange;
 
+        // Mark the robot's current cell as free
+        exploreState.grid[ry][rx] = 1;
+
         if(exploreState.sensor === 'LASER') {
-            // Laser: multiple narrow beams
-            for(let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
+            // Laser: precise 360° scan using Bresenham-like coverage
+            // Scan all cells within range using fine angular resolution
+            for(let angle = 0; angle < Math.PI * 2; angle += Math.PI / 32) {
                 for(let d = 1; d <= range; d++) {
                     let cx = Math.round(rx + d * Math.cos(angle));
                     let cy = Math.round(ry + d * Math.sin(angle));
@@ -4909,25 +4913,41 @@
                 }
             }
         } else {
-            // Sonar: wider cone, less precise
-            for(let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
-                for(let spread = -0.2; spread <= 0.2; spread += 0.1) {
-                    let a = angle + spread;
-                    for(let d = 1; d <= range; d++) {
-                        let cx = Math.round(rx + d * Math.cos(a));
-                        let cy = Math.round(ry + d * Math.sin(a));
-                        if(cx < 0 || cx >= EXPLORE_DIM || cy < 0 || cy >= EXPLORE_DIM) break;
-                        if(isObstacle(cx, cy) || exploreState.grid[cy][cx] === 2) {
-                            exploreState.grid[cy][cx] = 2;
-                            break;
-                        } else {
-                            if(exploreState.grid[cy][cx] === 0) {
-                                exploreState.grid[cy][cx] = 1;
+            // Sonar: forward-facing cone (120°) with noise and uncertainty
+            // Robot heading determines cone direction
+            let heading = exploreState.robot.heading || 0;
+            let coneWidth = Math.PI / 1.5; // 120 degree cone
+
+            for(let angle = heading - coneWidth/2; angle <= heading + coneWidth/2; angle += Math.PI / 24) {
+                // Sonar has random noise - sometimes misses cells or gives false readings
+                if(Math.random() < 0.1) continue; // 10% chance to miss this ray
+
+                let hitObstacle = false;
+                for(let d = 1; d <= range; d++) {
+                    let cx = Math.round(rx + d * Math.cos(angle));
+                    let cy = Math.round(ry + d * Math.sin(angle));
+                    if(cx < 0 || cx >= EXPLORE_DIM || cy < 0 || cy >= EXPLORE_DIM) break;
+
+                    if(isObstacle(cx, cy) || exploreState.grid[cy][cx] === 2) {
+                        exploreState.grid[cy][cx] = 2;
+                        hitObstacle = true;
+                        // Sonar sometimes detects obstacle a cell early or late
+                        if(Math.random() < 0.2 && d > 1) {
+                            let px = Math.round(rx + (d-1) * Math.cos(angle));
+                            let py = Math.round(ry + (d-1) * Math.sin(angle));
+                            if(px >= 0 && px < EXPLORE_DIM && py >= 0 && py < EXPLORE_DIM) {
+                                if(!isObstacle(px, py)) exploreState.grid[py][px] = 1;
                             }
                         }
+                        break;
+                    } else {
+                        exploreState.grid[cy][cx] = 1;
                     }
                 }
             }
+
+            // Rotate robot heading for next scan
+            exploreState.robot.heading = (heading + Math.PI / 3) % (Math.PI * 2);
         }
     }
 
@@ -4996,6 +5016,72 @@
         exploreState.targetFrontier = best;
     }
 
+    // BFS pathfinding to find path to target
+    function findPathBFS(startX, startY, targetX, targetY) {
+        const directions = [
+            {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1},
+            {dx: 1, dy: 1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: -1, dy: -1}
+        ];
+
+        // Use priority queue - prefer known free cells, but allow unknown cells adjacent to free
+        const queue = [{x: startX, y: startY, path: [], cost: 0}];
+        const visited = new Set();
+        visited.add(`${startX},${startY}`);
+
+        while(queue.length > 0) {
+            // Sort by cost (prefer paths through known cells)
+            queue.sort((a, b) => a.cost - b.cost);
+            const current = queue.shift();
+
+            // Check if we reached target (within 1.5 cells)
+            if(Math.hypot(targetX - current.x, targetY - current.y) < 1.5) {
+                return current.path;
+            }
+
+            // Limit search depth to avoid performance issues
+            if(current.path.length > 60) continue;
+
+            for(let dir of directions) {
+                const nx = current.x + dir.dx;
+                const ny = current.y + dir.dy;
+                const key = `${nx},${ny}`;
+
+                if(visited.has(key)) continue;
+                if(nx <= 0 || nx >= EXPLORE_DIM-1 || ny <= 0 || ny >= EXPLORE_DIM-1) continue;
+                if(isObstacle(nx, ny) || exploreState.grid[ny][nx] === 2) continue;
+
+                const cellValue = exploreState.grid[ny][nx];
+
+                // Allow free cells (1) always
+                // Allow unknown cells (0) only if adjacent to a known free cell
+                if(cellValue === 0) {
+                    let hasAdjacentFree = false;
+                    for(let d of directions) {
+                        const ax = nx + d.dx;
+                        const ay = ny + d.dy;
+                        if(ax >= 0 && ax < EXPLORE_DIM && ay >= 0 && ay < EXPLORE_DIM) {
+                            if(exploreState.grid[ay][ax] === 1) {
+                                hasAdjacentFree = true;
+                                break;
+                            }
+                        }
+                    }
+                    if(!hasAdjacentFree) continue;
+                }
+
+                visited.add(key);
+                queue.push({
+                    x: nx,
+                    y: ny,
+                    path: [...current.path, {x: nx, y: ny}],
+                    cost: current.cost + (cellValue === 1 ? 1 : 3) // Prefer known cells
+                });
+            }
+        }
+
+        return null; // No path found
+    }
+
     function moveTowardsFrontier() {
         if(!exploreState.targetFrontier) return;
 
@@ -5010,44 +5096,19 @@
             return;
         }
 
-        // Try all 8 directions, pick the best valid move
-        const directions = [
-            {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1},
-            {dx: 1, dy: 1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: -1, dy: -1}
-        ];
+        // Use BFS to find path to frontier
+        const path = findPathBFS(rx, ry, tx, ty);
 
-        let bestMove = null;
-        let bestScore = Infinity;
-
-        for(let dir of directions) {
-            const nx = rx + dir.dx;
-            const ny = ry + dir.dy;
-
-            // Check if valid move
-            if(nx <= 0 || nx >= EXPLORE_DIM-1 || ny <= 0 || ny >= EXPLORE_DIM-1) continue;
-            if(isObstacle(nx, ny) || exploreState.grid[ny][nx] === 2) continue;
-
-            // Score = distance to target (lower is better)
-            const newDist = Math.hypot(tx - nx, ty - ny);
-            // Add small penalty for diagonal to prefer cardinal directions when equal
-            const score = newDist + (dir.dx !== 0 && dir.dy !== 0 ? 0.01 : 0);
-
-            if(score < bestScore) {
-                bestScore = score;
-                bestMove = {x: nx, y: ny};
-            }
-        }
-
-        if(bestMove) {
-            exploreState.robot.x = bestMove.x;
-            exploreState.robot.y = bestMove.y;
+        if(path && path.length > 0) {
+            // Take the first step
+            exploreState.robot.x = path[0].x;
+            exploreState.robot.y = path[0].y;
             exploreState.stuckCounter = 0;
         } else {
-            // Stuck! Increment counter and try to find alternative
+            // No path found - blacklist this frontier
             exploreState.stuckCounter = (exploreState.stuckCounter || 0) + 1;
 
             if(exploreState.stuckCounter > 2) {
-                // Blacklist this frontier - it's unreachable
                 if(exploreState.targetFrontier) {
                     if(!exploreState.blacklist) exploreState.blacklist = [];
                     exploreState.blacklist.push({
@@ -5059,12 +5120,16 @@
                 exploreState.stuckCounter = 0;
 
                 // Try to move to any free adjacent cell to get unstuck
+                const directions = [
+                    {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1},
+                    {dx: 1, dy: 1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: -1, dy: -1}
+                ];
                 const shuffled = [...directions].sort(() => Math.random() - 0.5);
                 for(let dir of shuffled) {
                     const nx = rx + dir.dx;
                     const ny = ry + dir.dy;
                     if(nx > 0 && nx < EXPLORE_DIM-1 && ny > 0 && ny < EXPLORE_DIM-1) {
-                        if(!isObstacle(nx, ny) && exploreState.grid[ny][nx] !== 2) {
+                        if(!isObstacle(nx, ny) && exploreState.grid[ny][nx] === 1) {
                             exploreState.robot.x = nx;
                             exploreState.robot.y = ny;
                             break;
@@ -5202,13 +5267,28 @@
         exploreCtx.lineWidth = 2;
         exploreCtx.stroke();
 
-        // Robot direction indicator
+        // Robot direction indicator (shows heading for sonar cone)
+        let heading = exploreState.robot.heading || 0;
         exploreCtx.beginPath();
         exploreCtx.moveTo(rx, ry);
-        exploreCtx.lineTo(rx + EXPLORE_CELL * 0.6, ry);
+        exploreCtx.lineTo(rx + EXPLORE_CELL * 0.7 * Math.cos(heading), ry + EXPLORE_CELL * 0.7 * Math.sin(heading));
         exploreCtx.strokeStyle = "white";
-        exploreCtx.lineWidth = 2;
+        exploreCtx.lineWidth = 3;
         exploreCtx.stroke();
+
+        // For sonar, draw the cone outline
+        if(exploreState.sensor === 'SONAR') {
+            let coneWidth = Math.PI / 1.5; // 120 degrees
+            exploreCtx.beginPath();
+            exploreCtx.moveTo(rx, ry);
+            exploreCtx.arc(rx, ry, exploreState.sensorRange * EXPLORE_CELL, heading - coneWidth/2, heading + coneWidth/2);
+            exploreCtx.lineTo(rx, ry);
+            exploreCtx.fillStyle = "rgba(16, 185, 129, 0.1)";
+            exploreCtx.fill();
+            exploreCtx.strokeStyle = "rgba(16, 185, 129, 0.5)";
+            exploreCtx.lineWidth = 1;
+            exploreCtx.stroke();
+        }
     }
 
     // Explore canvas interactions
