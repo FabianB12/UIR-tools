@@ -3,68 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UIR Exam Resources</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>UIR Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .container {
+            max-width: 720px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 48px;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
         }
         .card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35);
-        }
-        .card-link {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 24px;
             text-decoration: none;
             color: inherit;
-            display: block;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .card:hover {
+            border-color: #ccc;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 6px;
+        }
+        .card-desc {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 2rem; }
+            .subtitle { margin-bottom: 32px; }
         }
     </style>
 </head>
-<body class="flex items-center justify-center p-6">
-    <div class="max-w-2xl w-full">
-        <div class="text-center mb-10">
-            <h1 class="text-4xl sm:text-5xl font-bold text-white mb-3">UIR Exam</h1>
-            <p class="text-blue-200 text-lg">Introduction to Robotics - Study Resources</p>
-        </div>
+<body>
+    <div class="container">
+        <h1>UIR Guide</h1>
+        <p class="subtitle">Introduction to Robotics</p>
 
-        <div class="grid gap-6 sm:grid-cols-2">
-            <a href="guide.html" class="card-link">
-                <div class="card">
-                    <div class="text-3xl mb-3">📚</div>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2">Interactive Guide</h2>
-                    <p class="text-gray-600 text-sm leading-relaxed">
-                        Visual explanations of path planning algorithms: PRM, RRT, A*, Theta*, D* Lite, JPS, Dubins paths, and more.
-                    </p>
-                    <div class="mt-4 text-blue-600 font-semibold text-sm">
-                        Open Guide →
-                    </div>
-                </div>
+        <div class="cards">
+            <a href="guide.html" class="card">
+                <div class="card-title">Algorithm Visualizations</div>
+                <div class="card-desc">Interactive demos of PRM, RRT, A*, Theta*, D* Lite, JPS, Dubins paths, and more.</div>
             </a>
 
-            <a href="quiz.html" class="card-link">
-                <div class="card">
-                    <div class="text-3xl mb-3">✍️</div>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2">Practice Quiz</h2>
-                    <p class="text-gray-600 text-sm leading-relaxed">
-                        128 questions covering all exam topics. Test yourself or browse all questions with answers.
-                    </p>
-                    <div class="mt-4 text-blue-600 font-semibold text-sm">
-                        Start Quiz →
-                    </div>
-                </div>
+            <a href="quiz.html" class="card">
+                <div class="card-title">Quiz</div>
+                <div class="card-desc">128 practice questions with answers. Test yourself or browse all questions.</div>
             </a>
-        </div>
-
-        <div class="text-center mt-10 text-blue-300 text-sm">
-            Good luck with your exam!
         </div>
     </div>
 </body>
